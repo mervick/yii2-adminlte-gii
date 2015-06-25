@@ -3,7 +3,7 @@
     "description": "Yii2 AdminLTE Gii Extension",
     "keywords": ["yii", "yii2", "extension", "gii", "adminlte"],
     "homepage": "https://github.com/mervick/yii2-adminlte-gii",
-    "type": "yii2-module",
+    "type": "yii2-extension",
     "license": "BSD-3-Clause",
     "authors": [
         {
