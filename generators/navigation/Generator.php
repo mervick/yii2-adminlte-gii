@@ -1,5 +1,5 @@
 <?php
-namespace backend\gii\generators\navigation;
+namespace mervick\adminlte\gii\generators\navigation;
 
 use Yii;
 use yii\gii\CodeFile;
