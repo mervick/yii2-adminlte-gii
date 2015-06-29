@@ -201,6 +201,7 @@ class Generator extends \yii\gii\Generator
 
     /**
      * @inheritdoc
+     * @todo Remove string comparing to foreign keys
      */
     public function generateLabels($table)
     {
@@ -459,15 +460,31 @@ class Generator extends \yii\gii\Generator
         return $rules;
     }
 
+    /**
+     * Get foreign attributes.
+     * @return array
+     * @throws NotSupportedException
+     */
     public function foreignAttributes()
     {
         static $result;
         if (!isset($result)) {
             $db = $this->getDbConnection();
-
-            if (($table = $db->getSchema()->getTableSchema($this->tableName, true)) !== null) {
-
-                \ChromePhp::log($table->foreignKeys);
+            if (($tableSchema = $db->getSchema()->getTableSchema($this->tableName, true)) !== null) {
+                $refs = $tableSchema->foreignKeys;
+                $fkTableName = $refs[0];
+                $attribute = array_keys(array_diff_key($refs, [0]))[0];
+                $fkKey = $refs[$attribute];
+                $label = Inflector::camel2words($fkTableName);
+//                $fkTableSchema = $db->getTableSchema($fkTableName, true);
+//                foreach ($fkTableSchema->columns as $column) {
+//
+//                }
+                $result[$attribute] = [
+                    'table' => $fkTableName,
+                    'key' => $fkKey,
+                    'label' => $label,
+                ];
             }
         } else {
             return $result;
