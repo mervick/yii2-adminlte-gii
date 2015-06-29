@@ -11,6 +11,8 @@ use yii\gii\CodeFile;
 use yii\helpers\Inflector;
 use yii\helpers\VarDumper;
 use yii\base\NotSupportedException;
+use yii\behaviors\TimestampBehavior;
+use yii\db\BaseActiveRecord;
 
 /**
  * This generator will generate one or multiple ActiveRecord classes for the specified database table.
@@ -267,6 +269,42 @@ class Generator extends \yii\gii\Generator
         return $timestampAttributes;
     }
 
+    public function modelBehaviors()
+    {
+        $behaviors = [];
+
+        $timestampAttributes = $this->timestampAttributes();
+        if (!empty($timestampAttributes)) {
+            if (count($timestampAttributes) == 2) {
+                $behaviors[] = TimestampBehavior::className();
+            } else {
+                $behaviors['timestamp'] = [
+                    'class' => TimestampBehavior::className()
+                ];
+
+                if (in_array('created_at', $timestampAttributes)) {
+                    $behaviors['timestamp']['attributes'] = [
+                        BaseActiveRecord::EVENT_BEFORE_INSERT => 'created_at',
+                    ];
+                } else {
+                    $behaviors['timestamp']['attributes'] = [
+                        BaseActiveRecord::EVENT_BEFORE_INSERT => 'updated_at',
+                        BaseActiveRecord::EVENT_BEFORE_UPDATE => 'updated_at',
+                    ];
+                }
+            }
+        }
+
+        return !empty($behaviors) ? "\n
+    /**
+     * @inheritdoc
+     */
+    public function behaviors()
+    {
+        return " . str_replace("\n", "\n        ", $behaviors) . ";
+    }\n" : '';
+    }
+
     /**
      * Get model namespaces
      * @return string
@@ -281,14 +319,14 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        $timestampAttributes = $this->timestampAttributes();
-
-        if (!empty($timestampAttributes)) {
-            $ns[] = 'yii\\behaviors\\TimestampBehavior';
-            if (count($timestampAttributes) < 2) {
-                $ns[] = 'yii\\db\\BaseActiveRecord';
-            }
-        }
+//        $timestampAttributes = $this->timestampAttributes();
+//
+//        if (!empty($timestampAttributes)) {
+//            $ns[] = 'yii\\behaviors\\TimestampBehavior';
+//            if (count($timestampAttributes) < 2) {
+//                $ns[] = 'yii\\db\\BaseActiveRecord';
+//            }
+//        }
 
         return 'use ' . implode(";\nuse ", $ns) . ";\n";
     }
