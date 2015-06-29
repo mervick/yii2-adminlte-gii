@@ -1,6 +1,6 @@
 <?php
 
-namespace backend\gii\generators\crud;
+namespace mervick\adminlte\gii\generators\crud;
 
 use Yii;
 use yii\db\Schema;

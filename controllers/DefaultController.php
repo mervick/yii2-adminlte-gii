@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace backend\gii\controllers;
+namespace mervick\adminlte\gii\controllers;
 
 use Yii;
 use yii\filters\AccessControl;

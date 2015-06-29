@@ -1,5 +1,6 @@
 <?php
-namespace backend\gii\generators\model;
+
+namespace mervick\adminlte\gii\generators\model;
 
 use Yii;
 use yii\db\Schema;
