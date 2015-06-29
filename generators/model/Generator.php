@@ -61,8 +61,7 @@ class Generator extends \yii\gii\generators\model\Generator
             [['imagesDomain', 'imagesPath'], 'required'],
 //            [['modelIcon'], 'match', 'pattern' => '/^\w+\-\w+(?:[0-9\w\-]+)?$/', 'message' => 'No valid image class.'],
             [['addingI18NStrings'], 'boolean'],
-            [['imagesDomain'], 'pattern' => '/^[\w](?:[\w-]+[\w])?\.(?:{\$domain})|(?:[\w](?:[0-9\w\-\.]+)?[\w]\.[\w]+)$/',
-                'message' => 'No valid images domain.'],
+            [['imagesDomain'], 'match', 'pattern' => '/^[\w](?:[\w-]+[\w])?\.(?:{\$domain})|(?:[\w](?:[0-9\w\-\.]+)?[\w]\.[\w]+)$/', 'message' => 'No valid images domain.'],
             [['messagesPaths'], 'validateMessagesPaths'],
         ]);
     }
@@ -86,7 +85,7 @@ class Generator extends \yii\gii\generators\model\Generator
     {
         return array_merge(parent::hints(), [
             'imagesDomain' => 'Images sub-domain pattern, e.g., <code>img.{$domain}</code> on domain <code>test.com</code> will be render as <code>img.test.com</code>, also you can set the full domain name, e.g., <code>images.example.com</code>',
-            'modelIcon' => 'This is a model icon, e.g., <code>glyphicon-asterisk</code>',
+//            'modelIcon' => 'This is a model icon, e.g., <code>glyphicon-asterisk</code>',
             'imagesPath' => 'Path to upload images. May be path alias use this, e.g., <code>@app/web/img</code>',
             'addingI18NStrings' => 'Enables the adding non existing I18N strings to the message category files.',
             'messagesPaths' => 'Paths to I18N messages, ability to set multiple directories separated by commas, e.g. <code>@backend/messages,@frontend/messages</code>',
@@ -350,6 +349,22 @@ class Generator extends \yii\gii\generators\model\Generator
         return $labels;
     }
 
+    public function foreignAttributes()
+    {
+        static $result;
+        if (!isset($result)) {
+            $db = $this->getDbConnection();
+
+            if (($table = $db->getSchema()->getTableSchema($this->tableName, true)) !== null) {
+
+                \ChromePhp::log($table->foreignKeys);
+            }
+        } else {
+            return $result;
+        }
+        return $result = [];
+    }
+
     /**
      * @return array the generated relation declarations
      */
@@ -523,6 +538,7 @@ class Generator extends \yii\gii\generators\model\Generator
      */
     public function generate()
     {
+        $this->foreignAttributes();
         $files = parent::generate();
         if ($this->enableI18N && $this->addingI18NStrings && !empty($this->I18NStrings)) {
             foreach (explode(',', $this->messagesPaths) as $alias) {
