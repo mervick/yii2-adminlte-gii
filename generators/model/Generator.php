@@ -200,32 +200,25 @@ class Generator extends \yii\gii\Generator
     }
 
     /**
-     * @inheritdoc
-     * @todo Remove string comparing to foreign keys
+     * Generates the attribute labels for the specified table.
+     * @param \yii\db\TableSchema $table the table schema
+     * @return array the generated attribute labels (name => label)
      */
     public function generateLabels($table)
     {
         $labels = [];
+
+        $refs = $this->foreignAttributes();
 
         foreach ($table->columns as $column) {
             if ($this->generateLabelsFromComments && !empty($column->comment)) {
                 $labels[$column->name] = $column->comment;
             } elseif (!strcasecmp($column->name, 'id')) {
                 $labels[$column->name] = 'ID';
+            } elseif (isset($refs[$column->name])) {
+                $labels[$column->name] = Inflector::camel2words($refs[$column->name]['table']);
             } else {
-                $label = Inflector::camel2words($column->name);
-                if (!empty($label) && substr_compare($label, ' id', -3, 3, true) === 0) {
-                    $label = substr($label, 0, -3) . ' ID';
-                }
-                $labels[$column->name] = $label;
-            }
-        }
-
-        foreach ($labels as $attribute => $label) {
-            if (substr($attribute, 0, 3) === 'id_') {
-                $labels[$attribute] = Inflector::camel2words(substr($attribute, 3));
-            } elseif (substr($attribute, -3) === '_id') {
-                $labels[$attribute] = Inflector::camel2words(substr($attribute, 0, -3));
+                $labels[$column->name] = Inflector::camel2words($column->name);
             }
         }
 
@@ -471,20 +464,19 @@ class Generator extends \yii\gii\Generator
         if (!isset($result)) {
             $db = $this->getDbConnection();
             if (($tableSchema = $db->getSchema()->getTableSchema($this->tableName, true)) !== null) {
-                $refs = $tableSchema->foreignKeys;
-                $fkTableName = $refs[0];
-                $attribute = array_keys(array_diff_key($refs, [0]))[0];
-                $fkKey = $refs[$attribute];
-                $label = Inflector::camel2words($fkTableName);
-//                $fkTableSchema = $db->getTableSchema($fkTableName, true);
-//                foreach ($fkTableSchema->columns as $column) {
+                foreach ($tableSchema->foreignKeys as $refs) {
+                    $refTableName = $refs[0];
+                    $attribute = array_keys(array_diff_key($refs, [0]))[0];
+                    $refKey = $refs[$attribute];
+//                    $refTableSchema = $db->getTableSchema($refTableName, true);
+//                    foreach ($refTableSchema->columns as $column) {
 //
-//                }
-                $result[$attribute] = [
-                    'table' => $fkTableName,
-                    'key' => $fkKey,
-                    'label' => $label,
-                ];
+//                    }
+                    $result[$attribute] = [
+                        'table' => $refTableName,
+                        'key' => $refKey,
+                    ];
+                }
             }
         } else {
             return $result;
