@@ -49,7 +49,7 @@ class DefaultController extends GiiController implements ViewContextInterface
                 'class' => AccessControl::className(),
                 'rules' => [
                     [
-                        'actions' => ['index', 'view', 'diff'],
+                        'actions' => ['index', 'view', 'diff', 'preview'],
                         'allow' => true,
                         'roles' => ['dev'],
                     ],
