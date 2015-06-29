@@ -22,11 +22,11 @@ use yii\db\BaseActiveRecord;
 class Generator extends \yii\gii\Generator
 {
     public $db = 'db';
-    public $ns = 'app\models';
+    public $ns = 'common\models';
     public $tableName;
     public $modelClass;
     public $baseClass = 'yii\db\ActiveRecord';
-    public $queryNs = 'app\models';
+    public $queryNs = 'common\models';
     public $queryClass;
     public $queryBaseClass = 'yii\db\ActiveQuery';
     public $generateRelations = true;
@@ -301,7 +301,7 @@ class Generator extends \yii\gii\Generator
      */
     public function behaviors()
     {
-        return " . str_replace("\n", "\n        ", $behaviors) . ";
+        return " . str_replace("\n", "\n        ", VarDumper::export($behaviors)) . ";
     }\n" : '';
     }
 
