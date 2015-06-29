@@ -247,19 +247,50 @@ class Generator extends \yii\gii\Generator
     }
 
     /**
-     * Get namespace for TimestampBehavior
-     * @param \yii\db\TableSchema $tableSchema
-     * @return string
+     * Returns timestamp attributes which will be auto updating.
+     * @return array
+     * @throws NotSupportedException
      */
-    public function timestampBehaviorNs($tableSchema)
+    public function timestampAttributes()
     {
-        foreach ($tableSchema->columns as $column) {
-            if ($column->name == 'created_at' || $column->name == 'updated_at') {
-                $this->enableTimestampBehavior = true;
-                return "use yii\\behaviors\\TimestampBehavior;\n";
+        static $timestampAttributes;
+
+        if (!isset($timestampAttributes)) {
+            $timestampAttributes = [];
+            foreach ($this->getDbConnection()->getSchema()->getTableSchema($this->tableName)->columns as $column) {
+                if ($column->name == 'created_at' || $column->name == 'updated_at') {
+                    $timestampAttributes[] = $column->name;
+                }
             }
         }
-        return '';
+
+        return $timestampAttributes;
+    }
+
+    /**
+     * Get model namespaces
+     * @return string
+     */
+    public function ns()
+    {
+        $ns = ['Yii'];
+
+        if (!empty($this->relationsSetters)) {
+            foreach ($this->relationsSetters as $rs) {
+                $ns[] = ltrim($rs['many_class'], '\\');
+            }
+        }
+
+        $timestampAttributes = $this->timestampAttributes();
+
+        if (!empty($timestampAttributes)) {
+            $ns[] = 'yii\\behaviors\\TimestampBehavior';
+            if (count($timestampAttributes) < 2) {
+                $ns[] = 'yii\\db\\BaseActiveRecord';
+            }
+        }
+
+        return 'use ' . implode(";\nuse ", $ns) . ";\n";
     }
 
     /**
