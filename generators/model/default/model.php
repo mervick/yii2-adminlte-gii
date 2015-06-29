@@ -18,13 +18,7 @@ echo "<?php\n";
 
 namespace <?= $generator->ns ?>;
 
-use Yii;
-<?= $generator->timestampBehaviorNs($tableSchema) ?>
-<?php if (!empty($generator->relationsSetters)): ?>
-<?php foreach ($generator->relationsSetters as $rs): ?>
-use <?= ltrim( $rs['many_class'], '\\') . ";\n" ?>
-<?php endforeach; ?>
-<?php endif; ?>
+<?= $generator->ns() ?>
 
 /**
  * This is the model class for table "<?= $generator->generateTableName($tableName) ?>".
@@ -41,31 +35,14 @@ use <?= ltrim( $rs['many_class'], '\\') . ";\n" ?>
  */
 class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . "\n" ?>
 {<?= $generator->statusConstants($tableSchema) ?>
-    /**
-     * Icon class, glyphicon or something else
-     * @var string
-     */
-    static $icon = '<?= $generator->modelIcon ?>';
 <?= $generator->imageUploadProperties($tableSchema, $tableName) ?>
-<?php if (!empty($generator->relationsSetters)) :
-    foreach ($generator->relationsSetters as $rs): ?>
+<?php if (!empty($generator->relationsSetters)) : ?>
 
     /**
-     * @var array|null the setter to update <?= strtolower($rs['label']) ?> list
+     * @var array The setters to update related attributes
      */
-    protected $_<?= $rs['property'] ?> = null;
-<?php endforeach;
-endif; ?>
-
-
-    /**
-     * Gets icon class
-     * @return string
-     */
-    public static function icon()
-    {
-        return explode('-', self::$icon)[0] . ' ' . self::$icon;
-    }
+    protected $relationAttributes = [];
+<?php endif; ?>
 
     /**
      * @inheritdoc
@@ -134,15 +111,17 @@ endif; ?>
      */
     public function validate<?= $rs['relation'] ?>()
     {
-        if (is_array($this->_<?= $rs['property'] ?>)) {
-            foreach ($this->_<?= $rs['property'] ?> as $id) {
-                if (intval($id) != $id) {
-                    $this->addError('<?= $rs['property'] ?>', 'Items of <?= $rs['label'] ?> must be integers.');
-                    break;
+        if (!empty($this->relationAttributes['<?= $rs['property'] ?>'])) {
+            if (is_array($this->relationAttributes['<?= $rs['property'] ?>'])) {
+                foreach ($this->relationAttributes['<?= $rs['property'] ?>'] as $id) {
+                    if (intval($id) != $id) {
+                        $this->addError('<?= $rs['property'] ?>', 'Items of <?= $rs['label'] ?> must be integers.');
+                        break;
+                    }
                 }
+            } else {
+                $this->addError('<?= $rs['property'] ?>', '<?= $rs['label'] ?> must be an array.');
             }
-        } elseif (!empty($this->_<?= $rs['property'] ?>)) {
-            $this->addError('<?= $rs['property'] ?>', '<?= $rs['label'] ?> must be an array.');
         }
     }
 
@@ -191,40 +170,39 @@ endif; ?>
      */
     protected function _getImageAttrUrl($attribute, $size)
     {
-        if (!empty($this->$attribute)) {
-            $index = 0;
-            $attr_sizes = "{$attribute}_sizes";
-            if (!empty($size)) {
-                if ($size == 'large') {
-                    $index = count($this->$attr_sizes) - 1;
-                } else {
-                    if (!is_array($size)) {
-                        if (strpos($size, 'x') !== false) {
-                            $size = explode('x', trim($size));
-                        } else {
-                            $size = [$size];
-                        }
+        $size = $size ?: 'default';
+        $index = 0;
+        $attr_sizes = "{$attribute}_sizes";
+        if (!empty($size)) {
+            if ($size == 'large') {
+                $index = count($this->$attr_sizes) - 1;
+            } else {
+                if (!is_array($size)) {
+                    if (strpos($size, 'x') !== false) {
+                        $size = explode('x', trim($size));
+                    } else {
+                        $size = [$size];
                     }
-                    foreach ($this->$attr_sizes as $_index => $_size) {
-                        $_size = explode('x', $_size);
-                        if ($size[0] == $_size[0]) {
-                            $index = $_index;
-                            if (count($size) == 1) {
-                                break;
-                            } elseif ($size[1] == $_size[1]) {
-                                break;
-                            }
+                }
+                foreach ($this->$attr_sizes as $_index => $_size) {
+                    $_size = explode('x', $_size);
+                    if ($size[0] == $_size[0]) {
+                        $index = $_index;
+                        if (count($size) == 1) {
+                            break;
+                        } elseif ($size[1] == $_size[1]) {
+                            break;
                         }
                     }
                 }
             }
-            $dir = '';
-            if (($pos = strpos($upload_dir = $this->{"{$attribute}_upload_dir"}, '/web/')) !== false) {
-                $dir = substr($upload_dir, $pos + 5);
-            }
-            return Yii::$app->request->baseUrl . '/' . implode('/', [$dir, $this->{$attr_sizes}[$index], "{$this->$attribute}"]);
         }
-        return null;
+        $dir = '';
+        if (($pos = strpos($upload_dir = $this->{"{$attribute}_upload_dir"}, '/web/')) !== false) {
+            $dir = substr($upload_dir, $pos + 5);
+        }
+        return Yii::$app->request->baseUrl . '/' . implode('/', [$dir, $this->{$attr_sizes}[$index], "{$this->$attribute}"]);
+
     }
 
 <?php foreach ($imageAttributes as $attr): ?>
