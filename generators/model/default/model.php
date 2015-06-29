@@ -35,7 +35,7 @@ namespace <?= $generator->ns ?>;
  */
 class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . "\n" ?>
 {<?= $generator->statusConstants($tableSchema) ?>
-<?= $generator->imageUploadProperties($tableSchema, $tableName) ?>
+<?= $generator->imagesSettings($tableSchema, $tableName) ?>
 <?php if (!empty($generator->relationsSetters)) : ?>
 
     /**
