@@ -51,18 +51,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
     {
         return '<?= $generator->generateTableName($tableName) ?>';
     }
-<?php if ($generator->enableTimestampBehavior): ?>
-
-    /**
-     * @inheritdoc
-     */
-    public function behaviors()
-    {
-        return [
-            TimestampBehavior::className(),
-        ];
-    }
-<?php endif; ?>
+<?= $generator->modelBehaviors() ?>
 <?php if ($generator->db !== 'db'): ?>
 
     /**
