@@ -36,7 +36,7 @@ class DefaultController extends GiiController implements ViewContextInterface
      */
     public function getViewPath()
     {
-        return Yii::getAlias('@backend/gii/views/default');
+        return dirname(__DIR__) . '/views/default';
     }
 
     /**
