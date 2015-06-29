@@ -22,8 +22,8 @@ class Generator extends \yii\gii\generators\model\Generator
     public $useSchemaName = true;
     public $generateQuery = true;
     public $enableI18N = true;
-    public $modelIcon;
-    public $imagesPath = '@backend/web/img';
+    public $imagesPath = '@images';
+    public $imagesDomain = 'img.{$domain}';
     public $enableTimestampBehavior = false;
     public $addingI18NStrings = true;
     public $messagesPaths = '@backend/messages';
@@ -39,7 +39,7 @@ class Generator extends \yii\gii\generators\model\Generator
      */
     public function getName()
     {
-        return 'ALT Model Generator';
+        return 'AdminLTE Model Generator';
     }
 
     /**
@@ -56,12 +56,14 @@ class Generator extends \yii\gii\generators\model\Generator
     public function rules()
     {
         return array_merge(parent::rules(), [
-            [['modelIcon', 'imagesPath'], 'filter', 'filter' => 'trim'],
-            ['imagesPath', 'filter', 'filter' => function($value) { return trim($value, '/'); }],
-            [['modelIcon', 'imagesPath'], 'required'],
-            ['modelIcon', 'match', 'pattern' => '/^\w+\-\w+(?:[0-9\w\-]+)?$/', 'message' => 'No valid image class.'],
+            [['imagesDomain', 'imagesPath'], 'filter', 'filter' => 'trim'],
+            [['imagesPath'], 'filter', 'filter' => function($value) { return trim($value, '/'); }],
+            [['imagesDomain', 'imagesPath'], 'required'],
+//            [['modelIcon'], 'match', 'pattern' => '/^\w+\-\w+(?:[0-9\w\-]+)?$/', 'message' => 'No valid image class.'],
             [['addingI18NStrings'], 'boolean'],
-            ['messagesPaths', 'validateMessagesPaths'],
+            [['imagesDomain'], 'pattern' => '/^[\w](?:[\w-]+[\w])?\.(?:{\$domain})|(?:[\w](?:[0-9\w\-\.]+)?[\w]\.[\w]+)$/',
+                'message' => 'No valid images domain.'],
+            [['messagesPaths'], 'validateMessagesPaths'],
         ]);
     }
 
@@ -73,6 +75,7 @@ class Generator extends \yii\gii\generators\model\Generator
         return array_merge(parent::attributeLabels(), [
             'addingI18NStrings' => 'Adding I18N Strings',
             'messagesPaths' => 'I18N Messages Paths',
+            'imagesDomain' => 'Images Domain',
         ]);
     }
 
@@ -82,6 +85,7 @@ class Generator extends \yii\gii\generators\model\Generator
     public function hints()
     {
         return array_merge(parent::hints(), [
+            'imagesDomain' => 'Images sub-domain pattern, e.g., <code>img.{$domain}</code> on domain <code>test.com</code> will be render as <code>img.test.com</code>, also you can set the full domain name, e.g., <code>images.example.com</code>',
             'modelIcon' => 'This is a model icon, e.g., <code>glyphicon-asterisk</code>',
             'imagesPath' => 'Path to upload images. May be path alias use this, e.g., <code>@app/web/img</code>',
             'addingI18NStrings' => 'Enables the adding non existing I18N strings to the message category files.',
@@ -185,40 +189,47 @@ class Generator extends \yii\gii\generators\model\Generator
     }
 
     /**
-     * Get images properties
+     * Get images settings
      * @param \yii\db\TableSchema $tableSchema
      * @param string $tableName
      * @return string
      */
-    public function imageUploadProperties($tableSchema, $tableName)
+    public function imagesSettings($tableSchema, $tableName)
     {
         $attributes = [];
+
         foreach ($tableSchema->columns as $column) {
             if (in_array($column->name, $this->imageAttributes)) {
-//                $attributes[] = implode("\n    ", [ "",
-//                        "/**",
-//                        " * @var mixed image the attribute for rendering",
-//                        " * the file input widget for upload on the form",
-//                        " */",
-//                        "public \${$column->name}_upload;"
-//                    ]) . "\n";
-                $attributes[] = implode("\n    ", [ "",
-                        "/**",
-                        " * @var mixed image the attribute for rendering",
-                        " * the file input widget for upload on the form",
-                        " */",
-                        "public \${$column->name}_sizes = ['200x200'];"
-                    ]) . "\n";
-                $attributes[] = implode("\n    ", [ "",
-                        "/**",
-                        " * @var mixed image the attribute for rendering",
-                        " * the file input widget for upload on the form",
-                        " */",
-                        "public \${$column->name}_upload_dir = '@backend/web/img/$tableName/{$column->name}';"
-                    ]) . "\n";
+                $attributes[$column->name] = [
+                    'sizes' => [
+                       'default' => [
+                           'size' => '200x200',
+                           'format' => 'jpg',
+                           'resize' => [
+                               'master' => 'adapt',
+                               'background' => '#fff',
+                           ]
+                       ],
+                    ],
+                ];
             }
         }
-        return implode('', $attributes);
+
+        if (!empty($attributes)) {
+            return implode("\n    ", [ "",
+                "/**",
+                " * @var array Images settings",
+                " */",
+                "protected \$imagesSettings = " . VarDumper::export([
+                    'domain' => $this->imagesDomain,
+                    'upload_dir' => '{$this->imagesPath}',
+                    'schema' =>  "{\$schema}/$tableName/{\$attribute}/{\$size}",
+                    'attributes' => $attributes,
+                ]) . ";"
+            ]) . "\n";
+        }
+
+        return null;
     }
 
     /**
