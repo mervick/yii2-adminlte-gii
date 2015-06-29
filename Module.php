@@ -154,8 +154,11 @@ class Module extends \yii\base\Module implements BootstrapInterface
     protected function coreGenerators()
     {
         return [
-            'model' => ['class' => 'yii\gii\generators\model\Generator'],
-            'crud' => ['class' => 'yii\gii\generators\crud\Generator'],
+            // adminlte generators
+            'model' => ['class' => 'mervick\adminlte\gii\generators\model\Generator'],
+            'crud' => ['class' => 'mervick\adminlte\gii\generators\crud\Generator'],
+
+            // default yii generators
             'controller' => ['class' => 'yii\gii\generators\controller\Generator'],
             'form' => ['class' => 'yii\gii\generators\form\Generator'],
             'module' => ['class' => 'yii\gii\generators\module\Generator'],
