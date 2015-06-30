@@ -41,7 +41,7 @@ class Generator extends \yii\gii\Generator
     public $addingI18NStrings = true;
     public $messagesPaths = '@backend/messages';
 
-    public $imageAttributes = ['img', 'image', 'logo', 'avatar', 'picture', 'preview'];
+    public $imageAttributes = ['img', 'image', 'logo', 'avatar', 'picture'];
     public $relationsSetters = [];
 
     protected $I18NStrings = [];
@@ -412,17 +412,17 @@ class Generator extends \yii\gii\Generator
         }
 
         if (!empty($attributes)) {
-            return implode("\n    ", [ "",
+            return '    ' . implode("\n    ", [
                 "/**",
                 " * @var array Images settings",
                 " */",
-                "protected \$imagesSettings = " . VarDumper::export([
+                "protected \$imagesSettings = " . str_replace("\n", "\n    ", VarDumper::export([
                     'domain' => $this->imagesDomain,
-                    'upload_dir' => '{$this->imagesPath}',
-                    'schema' =>  "{\$schema}/$tableName/{\$attribute}/{\$size}",
+                    'upload_dir' => $this->imagesPath,
+                    'schema' =>  "{\$path}/$tableName/{\$attribute}/{\$size}",
                     'attributes' => $attributes,
-                ]) . ";"
-            ]) . "\n";
+                ])) . ";"
+            ]) . "\n\n";
         }
 
         return null;
