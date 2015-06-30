@@ -27,7 +27,6 @@ namespace <?= $generator->ns ?>;
  * @property <?= "{$column->phpType} \${$column->name}\n" ?>
 <?php endforeach; ?>
 <?php if (!empty($relations)): ?>
- *
 <?php foreach ($relations as $name => $relation): ?>
  * @property <?= $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name) . "\n" ?>
 <?php endforeach; ?>
@@ -36,13 +35,6 @@ namespace <?= $generator->ns ?>;
 class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . "\n" ?>
 {<?= $generator->statusConstants($tableSchema) ?>
 <?= $generator->imagesSettings($tableSchema, $tableName) ?>
-<?php if (!empty($generator->relationsSetters)) : ?>
-
-    /**
-     * @var array The setters to update related attributes
-     */
-    protected $relationAttributes = [];
-<?php endif; ?>
 
     /**
      * @inheritdoc
@@ -93,16 +85,35 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
     }
 <?php endforeach; ?>
 <?php if (!empty($generator->relationsSetters)): ?>
+
+    /**
+     * @var array The setters to set many many relations
+     */
+    protected $setManyMany = [];
 <?php foreach ($generator->relationsSetters as $rs): ?>
+
+    /**
+     * Set {{<?= $rs['property'] ?>}} attribute.
+     * @param array $ids
+     */
+    public function set<?= $rs['relation'] ?>($ids)
+    {
+        $this->setManyMany['<?= $rs['property'] ?>'] = [];
+        if (!empty($ids)) {
+            foreach ($ids as $id) {
+                $this->setManyMany['<?= $rs['property'] ?>'][] = $id;
+            }
+        }
+    }
 
     /**
      * Validate {{<?= $rs['property'] ?>}} attribute.
      */
     public function validate<?= $rs['relation'] ?>()
     {
-        if (!empty($this->relationAttributes['<?= $rs['property'] ?>'])) {
-            if (is_array($this->relationAttributes['<?= $rs['property'] ?>'])) {
-                foreach ($this->relationAttributes['<?= $rs['property'] ?>'] as $id) {
+        if (!empty($this->setManyMany['<?= $rs['property'] ?>'])) {
+            if (is_array($this->setManyMany['<?= $rs['property'] ?>'])) {
+                foreach ($this->setManyMany['<?= $rs['property'] ?>'] as $id) {
                     if (intval($id) != $id) {
                         $this->addError('<?= $rs['property'] ?>', 'Items of <?= $rs['label'] ?> must be integers.');
                         break;
@@ -110,20 +121,6 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
                 }
             } else {
                 $this->addError('<?= $rs['property'] ?>', '<?= $rs['label'] ?> must be an array.');
-            }
-        }
-    }
-
-    /**
-     * Sets {{<?= $rs['property'] ?>}} attribute.
-     * @param array $ids
-     */
-    public function set<?= $rs['relation'] ?>($ids)
-    {
-        $this->_<?= $rs['property'] ?> = [];
-        if (!empty($ids)) {
-            foreach ($ids as $id) {
-                $this->_<?= $rs['property'] ?>[] = $id;
             }
         }
     }
@@ -157,7 +154,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
      * @param mixed $size
      * @return null|string
      */
-    protected function _getImageAttrUrl($attribute, $size)
+    protected function imageUrl($attribute, $size)
     {
         $size = $size ?: 'default';
         $index = 0;
@@ -200,9 +197,9 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
      * @param mixed $size
      * @return null|string
      */
-    public function get<?= ucfirst($attr) ?>Url($size=null)
+    public function get<?= ucfirst($attr) ?>Url($size = null)
     {
-        return $this->_getImageAttrUrl('<?= $attr ?>', $size);
+        return $this->imageUrl('<?= $attr ?>', $size);
     }
 
 <?php endforeach; ?>
