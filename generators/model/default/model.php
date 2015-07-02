@@ -20,21 +20,9 @@ namespace <?= $generator->ns ?>;
 
 <?= $generator->modelNS() ?>
 
-/**
- * This is the model class for table "<?= $generator->generateTableName($tableName) ?>".
- *
-<?php foreach ($tableSchema->columns as $column): ?>
- * @property <?= "{$column->phpType} \${$column->name}\n" ?>
-<?php endforeach; ?>
-<?php if (!empty($relations)): ?>
-<?php foreach ($relations as $name => $relation): ?>
- * @property <?= $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name) . "\n" ?>
-<?php endforeach; ?>
-<?php endif; ?>
- */
-class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . "\n" ?>
+<?= $generator->modelPhpDocs() ?>
+class <?= $className ?> extends <?= array_reverse(explode('\\', $generator->baseClass))[0] . "\n" ?>
 {<?= $generator->statusConstants($tableSchema) ?>
-<?= $generator->imagesSettings($tableSchema, $tableName) ?>
 
     /**
      * @inheritdoc
