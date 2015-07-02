@@ -296,5 +296,4 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
 <?php endif; ?>
     }
 <?php endif; ?>
-<?= $generator->timestampSetters($tableSchema) ?>
 }
