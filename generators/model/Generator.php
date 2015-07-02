@@ -269,6 +269,21 @@ class Generator extends \yii\gii\Generator
         return $timestampAttributes;
     }
 
+    /**
+     * Exports var with php code and inserts the tabs
+     * @param mixed $var
+     * @param int $insert_tabs
+     * @param string $tab_string
+     * @return string
+     */
+    public function exportVar($var, $insert_tabs = 0, $tab_string = '    ') {
+        $var = preg_replace('~\'`([^\'`]+)`\'~', '$1', VarDumper::export($var));
+        if ($insert_tabs > 0) {
+            $var = str_replace("\n", "\n" . str_repeat($tab_string, $insert_tabs), $var);
+        }
+        return $var;
+    }
+
     public function modelBehaviors()
     {
         $behaviors = [];
@@ -276,10 +291,10 @@ class Generator extends \yii\gii\Generator
         $timestampAttributes = $this->timestampAttributes();
         if (!empty($timestampAttributes)) {
             if (count($timestampAttributes) == 2) {
-                $behaviors[] = TimestampBehavior::className();
+                $behaviors[] = '`TimestampBehavior::className()`';
             } else {
                 $behaviors['timestamp'] = [
-                    'class' => TimestampBehavior::className()
+                    'class' => '`TimestampBehavior::className()`'
                 ];
 
                 if (in_array('created_at', $timestampAttributes)) {
