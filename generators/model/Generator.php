@@ -337,7 +337,7 @@ class Generator extends \yii\gii\Generator
             return $tabs . implode("\n$tabs", $var) . "\n";
         } else {
             if ($insert_tabs > 0) {
-                return str_replace("\n", "\n$tabs", $var);
+                $var = str_replace("\n", "\n$tabs", $var);
             }
         }
 
@@ -385,7 +385,7 @@ class Generator extends \yii\gii\Generator
             foreach ($this->relationsSetters as $rs) {
                 $behavior['relations'][$rs['property']] = [
                     'label' => $rs['label'],
-                    'class' => '`' . call_user_func([array_reverse(explode('\\', $rs['many_class']))[0], 'className']) . '::className()`',
+                    'class' => '`' . call_user_func([$rs['many_class'], 'className']) . '::className()`',
                     'refs' => [
                         $rs['many_id'],
                         $rs['many_fk'],
@@ -449,12 +449,16 @@ class Generator extends \yii\gii\Generator
         }
 
         $timestampAttributes = $this->timestampAttributes();
-
         if (!empty($timestampAttributes)) {
             $ns[] = 'yii\\behaviors\\TimestampBehavior;';
             if (count($timestampAttributes) < 2) {
                 $ns[] = 'yii\\db\\BaseActiveRecord;';
             }
+        }
+
+        $imageAttributes = $this->imageAttributes();
+        if (!empty($imageAttributes)) {
+            $ns[] = 'mervick\\adminlte\\behaviors\\ImageBehavior;';
         }
 
         if (!empty($this->relationsSetters)) {
@@ -473,19 +477,50 @@ class Generator extends \yii\gii\Generator
     public function modelPhpDocs()
     {
         $tableName = $this->generateTableName($this->tableName);
+        $db = $this->getDbConnection();
+        $tableSchema = $db->getSchema()->getTableSchema($this->tableName, true);
 
-        $properties = [];
-        $methods = [];
+        $docs = [];
 
-        foreach ($tableSchema->columns as $column) {
-       // * @property <?= "{$column->phpType} \${$column->name}\n"
+        if (!empty($tableSchema->columns)) {
+            $docs[] = 'Attributes:';
+            foreach ($tableSchema->columns as $column) {
+                $docs[] = "@property {$column->phpType} \${$column->name}";
+            }
+        }
+
+        $relations = $this->generateRelations();
+        \ChromePhp::log(array_keys($relations));
+        \ChromePhp::log($this->tableName);
+        if (!empty($relations) && isset($relations[$this->tableName])) {
+            $docs[] = '';
+            $docs[] = 'Relations:';
+            foreach ($relations[$this->tableName] as $name => $relation) {
+                $docs[] = '@property ' . $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name);
+            }
+        }
+
+        $timestampAttributes = $this->timestampAttributes();
+        if (!empty($timestampAttributes)) {
+            $docs[] = '';
+            $docs[] = 'Inherited from TimestampBehavior:';
+            $docs[] = '@method touch(string $attribute)';
+        }
+
+        if (!empty($this->relationsSetters)) {
+            $docs[] = '';
+            $docs[] = 'Inherited from ManyManyBehavior:';
+            $docs[] = '@method validateManyMany(string $attribute)';
+            foreach ($this->relationsSetters as $rs) {
+                $docs[] = "@method set{$rs['relation']}(array \$value)";
+            }
         }
 
         return $this->formatCode([
             '/**',
             " * This is the model class for table $tableName",
-            $this->formatCode($properties, 1, ' * @property ', $properties) .
-            $this->formatCode($methods, 1, ' * @method ', $methods),
+            ' *',
+            rtrim($this->formatCode($docs, 1, ' * ', $docs)),
             ' *',
             ' */',
         ]);
@@ -511,50 +546,6 @@ class Generator extends \yii\gii\Generator
                 }
             }
         }
-    }
-
-    /**
-     * Get images settings
-     * @param \yii\db\TableSchema $tableSchema
-     * @param string $tableName
-     * @return string
-     */
-    public function imagesSettings($tableSchema, $tableName)
-    {
-        $attributes = [];
-
-        foreach ($tableSchema->columns as $column) {
-            if (in_array($column->name, $this->imageAttributes)) {
-                $attributes[$column->name] = [
-                    'sizes' => [
-                       'default' => [
-                           'size' => '200x200',
-                           'format' => 'jpg',
-                           'resize' => [
-                               'master' => 'adapt',
-                               'background' => '#fff',
-                           ]
-                       ],
-                    ],
-                ];
-            }
-        }
-
-        if (!empty($attributes)) {
-            return '    ' . implode("\n    ", [
-                "/**",
-                " * @var array Images settings",
-                " */",
-                "protected \$imagesSettings = " . str_replace("\n", "\n    ", VarDumper::export([
-                    'domain' => $this->imagesDomain,
-                    'upload_dir' => $this->imagesPath,
-                    'schema' =>  "{\$path}/$tableName/{\$attribute}/{\$size}",
-                    'attributes' => $attributes,
-                ])) . ";"
-            ]) . "\n\n";
-        }
-
-        return null;
     }
 
     /**
@@ -687,8 +678,14 @@ class Generator extends \yii\gii\Generator
      */
     protected function generateRelations()
     {
+        static $result;
+
+        if (isset($result)) {
+            return $result;
+        }
+
         if (!$this->generateRelations) {
-            return [];
+            return $result = [];
         }
 
         $db = $this->getDbConnection();
@@ -760,7 +757,7 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        return $relations;
+        return $result = $relations;
     }
 
     /**
