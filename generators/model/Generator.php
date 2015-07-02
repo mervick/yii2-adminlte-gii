@@ -506,6 +506,18 @@ class Generator extends \yii\gii\Generator
             $docs[] = '@method touch(string $attribute)';
         }
 
+        $imageAttributes = $this->imageAttributes();
+        if (!empty($imageAttributes)) {
+            $docs[] = '';
+            $docs[] = 'Inherited from ImageBehavior:';
+            foreach ($imageAttributes as $attribute) {
+                $docs[] = "@property string {$attribute}Url";
+            }
+            foreach ($imageAttributes as $attribute) {
+                $docs[] = '@method string get' . ucfirst($attribute) .'Url(string $size)';
+            }
+        }
+
         if (!empty($this->relationsSetters)) {
             $docs[] = '';
             $docs[] = 'Inherited from ManyManyBehavior:';
