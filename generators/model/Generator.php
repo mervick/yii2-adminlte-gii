@@ -255,18 +255,39 @@ class Generator extends \yii\gii\Generator
      */
     public function timestampAttributes()
     {
-        static $timestampAttributes;
+        static $attributes;
 
-        if (!isset($timestampAttributes)) {
-            $timestampAttributes = [];
+        if (!isset($attributes)) {
+            $attributes = [];
             foreach ($this->getDbConnection()->getSchema()->getTableSchema($this->tableName)->columns as $column) {
                 if ($column->name == 'created_at' || $column->name == 'updated_at') {
-                    $timestampAttributes[] = $column->name;
+                    $attributes[] = $column->name;
                 }
             }
         }
 
-        return $timestampAttributes;
+        return $attributes;
+    }
+
+    /**
+     * Returns the models image attributes.
+     * @return array
+     * @throws NotSupportedException
+     */
+    public function imageAttributes()
+    {
+        static $attributes;
+
+        if (!isset($attributes)) {
+            $attributes = [];
+            foreach ($this->getDbConnection()->getSchema()->getTableSchema($this->tableName)->columns as $column) {
+                if (in_array($column->name, $this->imageAttributes)) {
+                    $attributes[] = $column->name;
+                }
+            }
+        }
+
+        return $attributes;
     }
 
     /**
@@ -276,9 +297,15 @@ class Generator extends \yii\gii\Generator
      * @param string $tab_string
      * @return string
      */
-    public function exportVar($var, $insert_tabs = 0, $tab_string = '    ') {
+    public function exportVar($var, $insert_tabs = 0, $tab_string = '    ')
+    {
+        if (empty($tab_string)) {
+            $tab_string = '    ';
+        }
+
         $var = preg_replace('~\'`([^\'`]+)`\'~', '$1', VarDumper::export($var));
         $this->formatCode($var, $insert_tabs, $tab_string);
+
         return $var;
     }
 
@@ -287,10 +314,18 @@ class Generator extends \yii\gii\Generator
      * @param array|string $var
      * @param int $insert_tabs
      * @param string $tab_string
+     * @param mixed $validate
      * @return string
      */
-    public function formatCode($var, $insert_tabs = 0, $tab_string = '    ')
+    public function formatCode($var, $insert_tabs = 0, $tab_string = '    ', $validate = true)
     {
+        if (empty($var) || empty($validate)) {
+            return '';
+        }
+        if (empty($tab_string)) {
+            $tab_string = '    ';
+        }
+
         $tabs = str_repeat($tab_string, $insert_tabs);
 
         if (is_array($var)) {
@@ -322,55 +357,110 @@ class Generator extends \yii\gii\Generator
             if (count($timestampAttributes) == 2) {
                 $behaviors[] = '`TimestampBehavior::className()`';
             } else {
-                $behaviors['timestamp'] = [
+                $behavior = [
                     'class' => '`TimestampBehavior::className()`'
                 ];
 
                 if (in_array('created_at', $timestampAttributes)) {
-                    $behaviors['timestamp']['attributes'] = [
-                        BaseActiveRecord::EVENT_BEFORE_INSERT => 'created_at',
+                    $behavior['attributes'] = [
+                        '`BaseActiveRecord::EVENT_BEFORE_INSERT`' => 'created_at',
                     ];
                 } else {
-                    $behaviors['timestamp']['attributes'] = [
-                        BaseActiveRecord::EVENT_BEFORE_INSERT => 'updated_at',
-                        BaseActiveRecord::EVENT_BEFORE_UPDATE => 'updated_at',
+                    $behavior['attributes'] = [
+                        '`BaseActiveRecord::EVENT_BEFORE_INSERT`' => 'updated_at',
+                        '`BaseActiveRecord::EVENT_BEFORE_UPDATE`' => 'updated_at',
                     ];
                 }
+
+                $behaviors[] = $behavior;
             }
         }
 
-        return !empty($behaviors) ? "\n
-    /**
-     * @inheritdoc
-     */
-    public function behaviors()
-    {
-        return " . $this->exportVar($behaviors, 2) . ";
-    }\n" : '';
+        if (!empty($this->relationsSetters)) {
+            $behavior = [
+                'class' => '`ManyManyBehavior::className()`',
+                'relations' => [],
+            ];
+
+            foreach ($this->relationsSetters as $rs) {
+                $behavior['relations'][$rs['property']] = [
+                    'label' => $rs['label'],
+                    'class' => '`' . call_user_func([array_reverse(explode('\\', $rs['many_class']))[0], 'className']) . '::className()`',
+                    'refs' => [
+                        $rs['many_id'],
+                        $rs['many_fk'],
+                        $rs['many_many_fk'],
+                    ],
+                ];
+            }
+
+            $behaviors[] = $behavior;
+        }
+
+        $imageAttributes = $this->imageAttributes();
+        if (!empty($imageAttributes)) {
+            $behavior = [
+                'class' => '`ImageBehavior::className()`',
+                'domain' => $this->imagesDomain,
+                'upload_dir' => $this->imagesPath,
+                'attributes' => [],
+            ];
+
+            foreach ($imageAttributes as $attribute) {
+                $behavior['attributes'][$attribute] = [
+                    'sizes' => [
+                        'default' => [
+                            'size' => '200x200',
+                            'format' => 'jpg',
+                            'master' => 'adapt',
+                        ],
+                    ],
+                ];
+            }
+
+            $behaviors[] = $behavior;
+        }
+
+        return $this->formatCode([
+            '/**',
+            ' * @inheritdoc',
+            ' */',
+            'public function behaviors()',
+            '{',
+            '   return ' . $this->exportVar($behaviors, 1),
+            '}'
+        ], 1, null, $behaviors);
     }
 
     /**
      * Get model namespaces
      * @return string
      */
-    public function ns()
+    public function modelNS()
     {
-        $ns = ['Yii'];
+        $ns = ['Yii;'];
+        $ns[] = ltrim($this->baseClass, '\\') .';';
 
         if (!empty($this->relationsSetters)) {
             foreach ($this->relationsSetters as $rs) {
-                $ns[] = ltrim($rs['many_class'], '\\');
+                $ns[] = ltrim($rs['many_class'], '\\') .';';
             }
         }
 
-//        $timestampAttributes = $this->timestampAttributes();
-//
-//        if (!empty($timestampAttributes)) {
-//            $ns[] = 'yii\\behaviors\\TimestampBehavior';
-//            if (count($timestampAttributes) < 2) {
-//                $ns[] = 'yii\\db\\BaseActiveRecord';
-//            }
-//        }
+        $timestampAttributes = $this->timestampAttributes();
+
+        if (!empty($timestampAttributes)) {
+            $ns[] = 'yii\\behaviors\\TimestampBehavior;';
+            if (count($timestampAttributes) < 2) {
+                $ns[] = 'yii\\db\\BaseActiveRecord;';
+            }
+        }
+
+        if (!empty($this->relationsSetters)) {
+            $ns[] = 'mervick\\adminlte\\behaviors\\ManyManyBehavior;';
+        }
+
+        return $this->formatCode($ns, 1, 'use ');
 
         return 'use ' . implode(";\nuse ", $ns) . ";\n";
     }
