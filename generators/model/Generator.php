@@ -403,6 +403,7 @@ class Generator extends \yii\gii\Generator
                 'class' => '`ImageBehavior::className()`',
                 'domain' => $this->imagesDomain,
                 'upload_dir' => $this->imagesPath,
+                'schema' =>  "{\$path}/{$this->tableName}/{\$attribute}/{\$size}",
                 'attributes' => [],
             ];
 
@@ -466,6 +467,31 @@ class Generator extends \yii\gii\Generator
     }
 
     /**
+     * Get model properties
+     * @return string
+     */
+    public function modelPhpDocs()
+    {
+        $tableName = $this->generateTableName($this->tableName);
+
+        $properties = [];
+        $methods = [];
+
+        foreach ($tableSchema->columns as $column) {
+       // * @property <?= "{$column->phpType} \${$column->name}\n"
+        }
+
+        return $this->formatCode([
+            '/**',
+            " * This is the model class for table $tableName",
+            $this->formatCode($properties, 1, ' * @property ', $properties) .
+            $this->formatCode($methods, 1, ' * @method ', $methods),
+            ' *',
+            ' */',
+        ]);
+    }
+
+    /**
      * Validate {{messagesPaths}} attribute.
      */
     public function validateMessagesPaths()
@@ -485,37 +511,6 @@ class Generator extends \yii\gii\Generator
                 }
             }
         }
-    }
-
-    /**
-     * Get timestamp setters for fields whose are not present in table schema
-     * @param \yii\db\TableSchema $tableSchema
-     * @return string
-     */
-    public function timestampSetters($tableSchema)
-    {
-        if ($this->enableTimestampBehavior) {
-            $columns = [];
-            foreach ($tableSchema->columns as $column) {
-                if ($column->name == 'created_at' || $column->name == 'updated_at') {
-                    $columns[] = $column->name;
-                }
-            }
-            $columns = array_diff(['created_at', 'updated_at'], $columns);
-            if (!empty($columns)) {
-                $content = [];
-                foreach ($columns as $column) {
-                    $content[] = implode("\n    ", [ "",
-                            "/**",
-                            " * Setter for `$column` used in TimestampBehavior",
-                            " */",
-                            "public function set" . ucfirst($column) . "(\$v) {}",
-                        ]) . "\n";
-                }
-                return implode('', $content);
-            }
-        }
-        return '';
     }
 
     /**
