@@ -18,7 +18,7 @@ echo "<?php\n";
 
 namespace <?= $generator->ns ?>;
 
-<?= $generator->ns() ?>
+<?= $generator->modelNS() ?>
 
 /**
  * This is the model class for table "<?= $generator->generateTableName($tableName) ?>".
