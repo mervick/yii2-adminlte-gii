@@ -242,7 +242,7 @@ class Generator extends \yii\gii\Generator
     {
         foreach ($tableSchema->columns as $column) {
             if ($column->name == 'status') {
-                return "\n    const STATUS_INACTIVE = 0;\n    const STATUS_ACTIVE = 1;\n\n";
+                return "    const STATUS_INACTIVE = 0;\n    const STATUS_ACTIVE = 1;\n";
             }
         }
         return '';
@@ -304,7 +304,7 @@ class Generator extends \yii\gii\Generator
         }
 
         $var = preg_replace('~\'`([^\'`]+)`\'~', '$1', VarDumper::export($var));
-        $this->formatCode($var, $insert_tabs, $tab_string);
+        $var = $this->formatCode($var, $insert_tabs, $tab_string);
 
         return $var;
     }
@@ -337,7 +337,7 @@ class Generator extends \yii\gii\Generator
             return $tabs . implode("\n$tabs", $var) . "\n";
         } else {
             if ($insert_tabs > 0) {
-                $var = str_replace("\n", "\n$tabs", $var);
+                return str_replace("\n", "\n$tabs", $var);
             }
         }
 
@@ -423,12 +423,11 @@ class Generator extends \yii\gii\Generator
         }
 
         return $this->formatCode([
-            '/**',
-            ' * @inheritdoc',
-            ' */',
+            '',
+            '/** @inheritdoc */',
             'public function behaviors()',
             '{',
-            '   return ' . $this->exportVar($behaviors, 1),
+            '    return ' . rtrim($this->exportVar($behaviors, 2)) . ';',
             '}'
         ], 1, null, $behaviors);
     }
