@@ -278,12 +278,41 @@ class Generator extends \yii\gii\Generator
      */
     public function exportVar($var, $insert_tabs = 0, $tab_string = '    ') {
         $var = preg_replace('~\'`([^\'`]+)`\'~', '$1', VarDumper::export($var));
-        if ($insert_tabs > 0) {
-            $var = str_replace("\n", "\n" . str_repeat($tab_string, $insert_tabs), $var);
-        }
+        $this->formatCode($var, $insert_tabs, $tab_string);
         return $var;
     }
 
+    /**
+     * Format code
+     * @param array|string $var
+     * @param int $insert_tabs
+     * @param string $tab_string
+     * @return string
+     */
+    public function formatCode($var, $insert_tabs = 0, $tab_string = '    ')
+    {
+        $tabs = str_repeat($tab_string, $insert_tabs);
+
+        if (is_array($var)) {
+            foreach ($var as &$item) {
+                if (is_array($item)) {
+                    $item = $this->exportVar($item, $insert_tabs, $tab_string);
+                }
+            }
+            return $tabs . implode("\n$tabs", $var) . "\n";
+        } else {
+            if ($insert_tabs > 0) {
+                return str_replace("\n", "\n$tabs", $var);
+            }
+        }
+
+        return $var;
+    }
+
+    /**
+     * Get model behaviors
+     * @return string
+     */
     public function modelBehaviors()
     {
         $behaviors = [];
@@ -316,7 +345,7 @@ class Generator extends \yii\gii\Generator
      */
     public function behaviors()
     {
-        return " . str_replace("\n", "\n        ", VarDumper::export($behaviors)) . ";
+        return " . $this->exportVar($behaviors, 2) . ";
     }\n" : '';
     }
 
