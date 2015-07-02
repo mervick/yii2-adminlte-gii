@@ -376,27 +376,6 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        if (!empty($this->relationsSetters)) {
-            $behavior = [
-                'class' => '`ManyManyBehavior::className()`',
-                'relations' => [],
-            ];
-
-            foreach ($this->relationsSetters as $rs) {
-                $behavior['relations'][$rs['property']] = [
-                    'label' => $rs['label'],
-                    'class' => '`' . call_user_func([$rs['many_class'], 'className']) . '::className()`',
-                    'refs' => [
-                        $rs['many_id'],
-                        $rs['many_fk'],
-                        $rs['many_many_fk'],
-                    ],
-                ];
-            }
-
-            $behaviors[] = $behavior;
-        }
-
         $imageAttributes = $this->imageAttributes();
         if (!empty($imageAttributes)) {
             $behavior = [
@@ -415,6 +394,27 @@ class Generator extends \yii\gii\Generator
                             'format' => 'jpg',
                             'master' => 'adapt',
                         ],
+                    ],
+                ];
+            }
+
+            $behaviors[] = $behavior;
+        }
+
+        if (!empty($this->relationsSetters)) {
+            $behavior = [
+                'class' => '`ManyManyBehavior::className()`',
+                'relations' => [],
+            ];
+
+            foreach ($this->relationsSetters as $rs) {
+                $behavior['relations'][$rs['property']] = [
+                    'label' => $rs['label'],
+                    'class' => '`' . call_user_func([$rs['many_class'], 'className']) . '::className()`',
+                    'refs' => [
+                        $rs['many_id'],
+                        $rs['many_fk'],
+                        $rs['many_many_fk'],
                     ],
                 ];
             }
