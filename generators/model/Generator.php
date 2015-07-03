@@ -815,7 +815,7 @@ class Generator extends \yii\gii\Generator
                 $schema = $tableSchema[$id];
                 $columns = $schema->getColumnNames();
                 $namedAttributes = array_intersect(['name', 'title', 'label'], $columns);
-                $this->relationsSetters[$tableSchema[$id]->name] = [
+                $this->relationsSetters[$tableSchema[$id]->name][] = [
                     'relation' => $relationName,
                     'property' => lcfirst($relationName),
                     'many_class' => '\\' . trim($this->ns, '\\') . '\\' . $this->generateClassName($table->name),
