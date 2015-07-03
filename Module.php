@@ -155,10 +155,12 @@ class Module extends \yii\base\Module implements BootstrapInterface
     {
         return [
             // adminlte generators
-            'model' => ['class' => 'mervick\adminlte\gii\generators\model\Generator'],
-            'crud' => ['class' => 'mervick\adminlte\gii\generators\crud\Generator'],
+            'adminlte-model' => ['class' => 'mervick\adminlte\gii\generators\model\Generator'],
+            'adminlte-crud' => ['class' => 'mervick\adminlte\gii\generators\crud\Generator'],
 
             // default yii generators
+            'model' => ['class' => 'yii\gii\generators\model\Generator'],
+            'crud' => ['class' => 'yii\gii\generators\crud\Generator'],
             'controller' => ['class' => 'yii\gii\generators\controller\Generator'],
             'form' => ['class' => 'yii\gii\generators\form\Generator'],
             'module' => ['class' => 'yii\gii\generators\module\Generator'],
