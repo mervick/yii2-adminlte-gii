@@ -39,6 +39,52 @@ $js = <<<JS
         $('form .field-generator-addingi18nstrings').toggle($('form #generator-enablei18n').is(':checked'));
         $('form .field-generator-messagespaths').toggle($('form #generator-enablei18n').is(':checked') &&
             $('form #generator-addingi18nstrings').is(':checked'));
+
+        // model generator: hide class name inputs when table name input contains *
+        $('#generator-tablename').change(function () {
+            var show = ($(this).val().indexOf('*') === -1);
+            $('.field-generator-modelclass').toggle(show);
+            if ($('#generator-generatequery').is(':checked')) {
+                $('.field-generator-queryclass').toggle(show);
+            }
+        });
+
+        // model generator: translate table name to model class
+        $('#generator-tablename').on('blur', function () {
+            var tableName = $(this).val();
+            if ($('#generator-modelclass').val() === '' && tableName && tableName.indexOf('*') === -1) {
+                var modelClass = '';
+                $.each(tableName.split('_'), function() {
+                    if(this.length>0)
+                        modelClass+=this.substring(0,1).toUpperCase()+this.substring(1);
+                });
+                $('#generator-modelclass').val(modelClass).blur();
+            }
+        });
+
+        // model generator: translate model class to query class
+        $('#generator-modelclass').on('blur', function () {
+            var modelClass = $(this).val();
+            if (modelClass !== '') {
+                var queryClass = $('#generator-queryclass').val();
+                if (queryClass === '') {
+                    queryClass = modelClass + 'Query';
+                    $('#generator-queryclass').val(queryClass);
+                }
+            }
+        });
+
+        // model generator: synchronize query namespace with model namespace
+        $('#generator-ns').on('blur', function () {
+            var stickyValue = $('.field-generator-queryns .sticky-value');
+            var input = $('#generator-queryns');
+            if (stickyValue.is(':visible') || !input.is(':visible')) {
+                var ns = $(this).val();
+                stickyValue.html(ns);
+                input.val(ns);
+            }
+        });
+
     }, 30);
 JS;
 
