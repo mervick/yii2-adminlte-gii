@@ -393,7 +393,7 @@ class Generator extends \yii\gii\Generator
                 'class' => '`ImageBehavior::className()`',
                 'domain' => $this->imagesDomain,
                 'upload_dir' => $this->imagesPath,
-                'schema' =>  "{\$path}/{$this->tableName}/{\$attribute}/{\$size}",
+                'schema' =>  "{\$path}/{$tableName}/{\$attribute}/{\$size}",
                 'attributes' => [],
             ];
 
