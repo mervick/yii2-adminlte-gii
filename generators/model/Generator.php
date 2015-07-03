@@ -197,7 +197,7 @@ class Generator extends \yii\gii\Generator
     {
         return array_merge(parent::stickyAttributes(), [
             'ns', 'db', 'baseClass', 'generateRelations', 'generateLabelsFromComments', 'queryNs', 'queryBaseClass',
-            'addingI18NStrings', 'messagesPaths',
+            'addingI18NStrings', 'messagesPaths', 'imagesPath', 'imagesDomain',
         ]);
     }
 
@@ -615,7 +615,7 @@ class Generator extends \yii\gii\Generator
 
         if (!empty($this->relationsSetters)) {
             foreach ($this->relationsSetters as $rs) {
-                $types["validate{$rs['relation']}"][] = $rs['property'];
+                $types["validateManyMany"][] = $rs['property'];
             }
         }
 
