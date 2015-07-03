@@ -18,9 +18,9 @@ echo "<?php\n";
 
 namespace <?= $generator->ns ?>;
 
-<?= $generator->modelNS() ?>
+<?= $generator->modelNS($tableSchema, $tableName) ?>
 
-<?= $generator->modelPhpDocs() ?>
+<?= $generator->modelPhpDocs($tableSchema, $tableName) ?>
 class <?= $className ?> extends <?= array_reverse(explode('\\', $generator->baseClass))[0] . "\n" ?>
 {
 <?= $generator->statusConstants($tableSchema) ?>
@@ -30,7 +30,7 @@ class <?= $className ?> extends <?= array_reverse(explode('\\', $generator->base
     {
         return '<?= $generator->generateTableName($tableName) ?>';
     }
-<?= $generator->modelBehaviors() ?>
+<?= $generator->modelBehaviors($tableSchema, $tableName) ?>
 <?php if ($generator->db !== 'db'): ?>
 
     /** @return \yii\db\Connection the database connection used by this AR class. */
