@@ -15,12 +15,11 @@
 
 echo "<?php\n";
 ?>
-
 namespace <?= $generator->ns ?>;
 
 <?= $generator->modelNS($tableSchema, $tableName) ?>
 
-<?= $generator->modelPhpDocs($tableSchema, $tableName) ?>
+<?= $generator->modelPhpDocs($tableSchema, $tableName, $relations) ?>
 class <?= $className ?> extends <?= array_reverse(explode('\\', $generator->baseClass))[0] . "\n" ?>
 {
 <?= $generator->statusConstants($tableSchema) ?>

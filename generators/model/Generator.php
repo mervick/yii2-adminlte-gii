@@ -484,11 +484,11 @@ class Generator extends \yii\gii\Generator
      * Get model properties
      * @param \yii\db\TableSchema $tableSchema the table schema
      * @param string $tableName
+     * @param array $relations
      * @return string
      */
-    public function modelPhpDocs($tableSchema, $tableName)
+    public function modelPhpDocs($tableSchema, $tableName, $relations)
     {
-        $tableName = $this->generateTableName($tableName);
         $docs = [];
 
         if (!empty($tableSchema->columns)) {
@@ -498,11 +498,10 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        $relations = $this->generateRelations();
-        if (!empty($relations) && isset($relations[$tableName])) {
+        if (!empty($relations)) {
             $docs[] = '';
             $docs[] = 'Relations:';
-            foreach ($relations[$tableName] as $name => $relation) {
+            foreach ($relations as $name => $relation) {
                 $docs[] = '@property ' . $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name);
             }
         }
@@ -530,17 +529,17 @@ class Generator extends \yii\gii\Generator
             $docs[] = '';
             $docs[] = 'Inherited from ManyManyBehavior:';
             $docs[] = '@method validateManyMany(string $attribute)';
-            foreach ($this->relationsSetters as $rs) {
+            foreach ($this->relationsSetters[$tableName] as $rs) {
                 $docs[] = "@method set{$rs['relation']}(array \$value)";
             }
         }
 
+        $fullTableName = $this->generateTableName($tableName);
         return $this->formatCode([
             '/**',
-            " * This is the model class for table $tableName",
+            " * This is the model class for table $fullTableName",
             ' *',
             rtrim($this->formatCode($docs, 1, ' * ', $docs)),
-            ' *',
             ' */',
         ]);
     }
