@@ -203,16 +203,17 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Generates the attribute labels for the specified table.
-     * @param \yii\db\TableSchema $table the table schema
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return array the generated attribute labels (name => label)
      */
-    public function generateLabels($table)
+    public function generateLabels($tableSchema, $tableName)
     {
         $labels = [];
 
-        $refs = $this->foreignAttributes();
+        $refs = $this->foreignAttributes($tableSchema, $tableName);
 
-        foreach ($table->columns as $column) {
+        foreach ($tableSchema->columns as $column) {
             if ($this->generateLabelsFromComments && !empty($column->comment)) {
                 $labels[$column->name] = $column->comment;
             } elseif (!strcasecmp($column->name, 'id')) {
@@ -224,8 +225,8 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        if (!empty($this->relationsSetters)) {
-            foreach ($this->relationsSetters as $relationSetter) {
+        if (!empty($this->relationsSetters[$tableName])) {
+            foreach ($this->relationsSetters[$tableName] as $relationSetter) {
                 $labels[$relationSetter['property']] = $relationSetter['label'];
             }
         }
@@ -250,44 +251,52 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Returns timestamp attributes which will be auto updating.
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return array
-     * @throws NotSupportedException
      */
-    public function timestampAttributes()
+    public function timestampAttributes($tableSchema, $tableName)
     {
         static $attributes;
-
         if (!isset($attributes)) {
             $attributes = [];
-            foreach ($this->getDbConnection()->getSchema()->getTableSchema($this->tableName)->columns as $column) {
+        }
+
+        if (!isset($attributes[$tableName])) {
+            $attributes[$tableName] = [];
+            foreach ($tableSchema->columns as $column) {
                 if ($column->name == 'created_at' || $column->name == 'updated_at') {
-                    $attributes[] = $column->name;
+                    $attributes[$tableName][] = $column->name;
                 }
             }
         }
 
-        return $attributes;
+        return $attributes[$tableName];
     }
 
     /**
      * Returns the models image attributes.
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return array
-     * @throws NotSupportedException
      */
-    public function imageAttributes()
+    public function imageAttributes($tableSchema, $tableName)
     {
         static $attributes;
-
         if (!isset($attributes)) {
             $attributes = [];
-            foreach ($this->getDbConnection()->getSchema()->getTableSchema($this->tableName)->columns as $column) {
+        }
+
+        if (!isset($attributes[$tableName])) {
+            $attributes[$tableName] = [];
+            foreach ($tableSchema->columns as $column) {
                 if (in_array($column->name, $this->imageAttributes)) {
-                    $attributes[] = $column->name;
+                    $attributes[$tableName][] = $column->name;
                 }
             }
         }
 
-        return $attributes;
+        return $attributes[$tableName];
     }
 
     /**
@@ -346,13 +355,15 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Get model behaviors
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return string
      */
-    public function modelBehaviors()
+    public function modelBehaviors($tableSchema, $tableName)
     {
         $behaviors = [];
 
-        $timestampAttributes = $this->timestampAttributes();
+        $timestampAttributes = $this->timestampAttributes($tableSchema, $tableName);
         if (!empty($timestampAttributes)) {
             if (count($timestampAttributes) == 2) {
                 $behaviors[] = '`TimestampBehavior::className()`';
@@ -376,7 +387,7 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        $imageAttributes = $this->imageAttributes();
+        $imageAttributes = $this->imageAttributes($tableSchema, $tableName);
         if (!empty($imageAttributes)) {
             $behavior = [
                 'class' => '`ImageBehavior::className()`',
@@ -401,13 +412,13 @@ class Generator extends \yii\gii\Generator
             $behaviors[] = $behavior;
         }
 
-        if (!empty($this->relationsSetters)) {
+        if (!empty($this->relationsSetters[$tableName])) {
             $behavior = [
                 'class' => '`ManyManyBehavior::className()`',
                 'relations' => [],
             ];
 
-            foreach ($this->relationsSetters as $rs) {
+            foreach ($this->relationsSetters[$tableName] as $rs) {
                 $behavior['relations'][$rs['property']] = [
                     'label' => $rs['label'],
                     'class' => '`' . call_user_func([$rs['many_class'], 'className']) . '::className()`',
@@ -434,20 +445,22 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Get model namespaces
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return string
      */
-    public function modelNS()
+    public function modelNS($tableSchema, $tableName)
     {
         $ns = ['Yii;'];
         $ns[] = ltrim($this->baseClass, '\\') .';';
 
-        if (!empty($this->relationsSetters)) {
-            foreach ($this->relationsSetters as $rs) {
+        if (!empty($this->relationsSetters[$tableName])) {
+            foreach ($this->relationsSetters[$tableName] as $rs) {
                 $ns[] = ltrim($rs['many_class'], '\\') .';';
             }
         }
 
-        $timestampAttributes = $this->timestampAttributes();
+        $timestampAttributes = $this->timestampAttributes($tableSchema, $tableName);
         if (!empty($timestampAttributes)) {
             $ns[] = 'yii\\behaviors\\TimestampBehavior;';
             if (count($timestampAttributes) < 2) {
@@ -455,30 +468,27 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        $imageAttributes = $this->imageAttributes();
+        $imageAttributes = $this->imageAttributes($tableSchema, $tableName);
         if (!empty($imageAttributes)) {
             $ns[] = 'mervick\\adminlte\\behaviors\\ImageBehavior;';
         }
 
-        if (!empty($this->relationsSetters)) {
+        if (!empty($this->relationsSetters[$tableName])) {
             $ns[] = 'mervick\\adminlte\\behaviors\\ManyManyBehavior;';
         }
 
         return $this->formatCode($ns, 1, 'use ');
-
-        return 'use ' . implode(";\nuse ", $ns) . ";\n";
     }
 
     /**
      * Get model properties
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return string
      */
-    public function modelPhpDocs()
+    public function modelPhpDocs($tableSchema, $tableName)
     {
-        $tableName = $this->generateTableName($this->tableName);
-        $db = $this->getDbConnection();
-        $tableSchema = $db->getSchema()->getTableSchema($this->tableName, true);
-
+        $tableName = $this->generateTableName($tableName);
         $docs = [];
 
         if (!empty($tableSchema->columns)) {
@@ -489,24 +499,22 @@ class Generator extends \yii\gii\Generator
         }
 
         $relations = $this->generateRelations();
-        \ChromePhp::log(array_keys($relations));
-        \ChromePhp::log($this->tableName);
-        if (!empty($relations) && isset($relations[$this->tableName])) {
+        if (!empty($relations) && isset($relations[$tableName])) {
             $docs[] = '';
             $docs[] = 'Relations:';
-            foreach ($relations[$this->tableName] as $name => $relation) {
+            foreach ($relations[$tableName] as $name => $relation) {
                 $docs[] = '@property ' . $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name);
             }
         }
 
-        $timestampAttributes = $this->timestampAttributes();
+        $timestampAttributes = $this->timestampAttributes($tableSchema, $tableName);
         if (!empty($timestampAttributes)) {
             $docs[] = '';
             $docs[] = 'Inherited from TimestampBehavior:';
             $docs[] = '@method touch(string $attribute)';
         }
 
-        $imageAttributes = $this->imageAttributes();
+        $imageAttributes = $this->imageAttributes($tableSchema, $tableName);
         if (!empty($imageAttributes)) {
             $docs[] = '';
             $docs[] = 'Inherited from ImageBehavior:';
@@ -518,7 +526,7 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        if (!empty($this->relationsSetters)) {
+        if (!empty($this->relationsSetters[$tableName])) {
             $docs[] = '';
             $docs[] = 'Inherited from ManyManyBehavior:';
             $docs[] = '@method validateManyMany(string $attribute)';
@@ -561,13 +569,14 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Generates validation rules for the specified table.
-     * @param \yii\db\TableSchema $table the table schema
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return array the generated validation rules
      */
-    public function generateRules($table)
+    public function generateRules($tableSchema, $tableName)
     {
         $rules = $types = $lengths = $extra = [];
-        foreach ($table->columns as $column) {
+        foreach ($tableSchema->columns as $column) {
             if ($column->autoIncrement) {
                 continue;
             }
@@ -613,8 +622,8 @@ class Generator extends \yii\gii\Generator
             }
         }
 
-        if (!empty($this->relationsSetters)) {
-            foreach ($this->relationsSetters as $rs) {
+        if (!empty($this->relationsSetters[$tableName])) {
+            foreach ($this->relationsSetters[$tableName] as $rs) {
                 $types["validateManyMany"][] = $rs['property'];
             }
         }
@@ -630,16 +639,16 @@ class Generator extends \yii\gii\Generator
         // Unique indexes rules
         try {
             $db = $this->getDbConnection();
-            $uniqueIndexes = $db->getSchema()->findUniqueIndexes($table);
+            $uniqueIndexes = $db->getSchema()->findUniqueIndexes($tableSchema);
             foreach ($uniqueIndexes as $uniqueColumns) {
                 // Avoid validating auto incremental columns
-                if (!$this->isColumnAutoIncremental($table, $uniqueColumns)) {
+                if (!$this->isColumnAutoIncremental($tableSchema, $uniqueColumns)) {
                     $attributesCount = count($uniqueColumns);
 
                     if ($attributesCount == 1) {
                         $rules[] = "[['" . $uniqueColumns[0] . "'], 'unique']";
                     } elseif ($attributesCount > 1) {
-                        $labels = array_intersect_key($this->generateLabels($table), array_flip($uniqueColumns));
+                        $labels = array_intersect_key($this->generateLabels($tableSchema, $tableName), array_flip($uniqueColumns));
                         $lastLabel = array_pop($labels);
                         $columnsList = implode("', '", $uniqueColumns);
                         $rules[] = "[['" . $columnsList . "'], 'unique', 'targetAttribute' => ['" . $columnsList . "'], 'message' => 'The combination of " . implode(', ', $labels) . " and " . $lastLabel . " has already been taken.']";
@@ -655,33 +664,34 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Get foreign attributes.
+     * @param \yii\db\TableSchema $tableSchema the table schema
+     * @param string $tableName
      * @return array
-     * @throws NotSupportedException
      */
-    public function foreignAttributes()
+    public function foreignAttributes($tableSchema, $tableName)
     {
         static $result;
         if (!isset($result)) {
-            $db = $this->getDbConnection();
-            if (($tableSchema = $db->getSchema()->getTableSchema($this->tableName, true)) !== null) {
-                foreach ($tableSchema->foreignKeys as $refs) {
-                    $refTableName = $refs[0];
-                    $attribute = array_keys(array_diff_key($refs, [0]))[0];
-                    $refKey = $refs[$attribute];
-//                    $refTableSchema = $db->getTableSchema($refTableName, true);
-//                    foreach ($refTableSchema->columns as $column) {
+            $result = [];
+        }
+        if (!isset($result[$tableName])) {
+            foreach ($tableSchema->foreignKeys as $refs) {
+                $refTableName = $refs[0];
+                $attribute = array_keys(array_diff_key($refs, [0]))[0];
+                $refKey = $refs[$attribute];
+//                $refTableSchema = $db->getTableSchema($refTableName, true);
+//                foreach ($refTableSchema->columns as $column) {
 //
-//                    }
-                    $result[$attribute] = [
-                        'table' => $refTableName,
-                        'key' => $refKey,
-                    ];
-                }
+//                }
+                $result[$tableName][$attribute] = [
+                    'table' => $refTableName,
+                    'key' => $refKey,
+                ];
             }
         } else {
-            return $result;
+            return $result[$tableName];
         }
-        return $result = [];
+        return $result[$tableName] = [];
     }
 
     /**
@@ -800,12 +810,12 @@ class Generator extends \yii\gii\Generator
                 $className[$n_id],
                 true,
             ];
-            if ($this->tableName === $tableSchema[$id]->name) {
+            if ($this->tableName === $tableSchema[$id]->name || $this->tableName === '*') {
                 /** @var $schema \yii\db\TableSchema */
                 $schema = $tableSchema[$id];
                 $columns = $schema->getColumnNames();
                 $namedAttributes = array_intersect(['name', 'title', 'label'], $columns);
-                $this->relationsSetters[] = [
+                $this->relationsSetters[$tableSchema[$id]->name] = [
                     'relation' => $relationName,
                     'property' => lcfirst($relationName),
                     'many_class' => '\\' . trim($this->ns, '\\') . '\\' . $this->generateClassName($table->name),
@@ -1087,14 +1097,14 @@ class Generator extends \yii\gii\Generator
 
     /**
      * Checks if any of the specified columns is auto incremental.
-     * @param \yii\db\TableSchema $table the table schema
+     * @param \yii\db\TableSchema $tableSchema the table schema
      * @param array $columns columns to check for autoIncrement property
      * @return boolean whether any of the specified columns is auto incremental.
      */
-    protected function isColumnAutoIncremental($table, $columns)
+    protected function isColumnAutoIncremental($tableSchema, $columns)
     {
         foreach ($columns as $column) {
-            if (isset($table->columns[$column]) && $table->columns[$column]->autoIncrement) {
+            if (isset($tableSchema->columns[$column]) && $tableSchema->columns[$column]->autoIncrement) {
                 return true;
             }
         }
@@ -1141,7 +1151,6 @@ class Generator extends \yii\gii\Generator
      */
     public function generate()
     {
-        $this->foreignAttributes();
         $files = [];
 
         $relations = $this->generateRelations();
@@ -1157,8 +1166,8 @@ class Generator extends \yii\gii\Generator
                 'className' => $modelClassName,
                 'queryClassName' => $queryClassName,
                 'tableSchema' => $tableSchema,
-                'labels' => $this->generateLabels($tableSchema),
-                'rules' => $this->generateRules($tableSchema),
+                'labels' => $this->generateLabels($tableSchema, $tableName),
+                'rules' => $this->generateRules($tableSchema, $tableName),
                 'relations' => isset($relations[$tableName]) ? $relations[$tableName] : [],
             ];
             $files[] = new CodeFile(
