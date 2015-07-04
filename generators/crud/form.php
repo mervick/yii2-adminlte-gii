@@ -19,13 +19,40 @@ $js = <<<JS
     $('form #generator-enablei18n').change(function () {
         $('form .field-generator-addingi18nstrings').toggle($(this).is(':checked'));
     });
+
     // hide `db` field when `generateRelationsFields` is disabled
     $('form #generator-generaterelationsfields').change(function () {
         $('form .field-generator-db').toggle($(this).is(':checked'));
     });
+
     setTimeout(function() {
         $('form .field-generator-addingi18nstrings').toggle($('form #generator-enablei18n').is(':checked'));
         $('form .field-generator-db').toggle($('form #generator-generaterelationsfields').is(':checked'));
+
+        $("#generator-modelclass").on("change", function() {
+            var modelClass = $(this).val(),
+                searchModelClass = modelClass + 'Search',
+                modelClassName = modelClass.split('\\\\').pop(),
+                controllerClass = 'backend\\\\controllers\\\\' + modelClassName + 'Controller',
+                viewPath = '@backend/views/' + modelClassName.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^\-/, ''),
+                jQsearchModelClass = $("#generator-searchmodelclass"),
+                jQcontrollerClass = $("#generator-controllerclass"),
+                jQviewPath = $("#generator-viewpath");
+
+            if (jQsearchModelClass.val() == '' || jQsearchModelClass.val() == jQsearchModelClass.data('generated')) {
+                jQsearchModelClass.val(searchModelClass).trigger("change");
+            }
+            if (jQcontrollerClass.val() == '' || jQcontrollerClass.val() == jQcontrollerClass.data('generated')) {
+                jQcontrollerClass.val(controllerClass).trigger("change");
+            }
+            if (jQviewPath.val() == '' || jQviewPath.val() == jQviewPath.data('generated')) {
+                jQviewPath.val(viewPath).trigger("change");
+            }
+
+            jQsearchModelClass.data('generated', searchModelClass);
+            jQcontrollerClass.data('generated', controllerClass);
+            jQviewPath.data('generated', viewPath);
+        });
     }, 30);
 JS;
 
