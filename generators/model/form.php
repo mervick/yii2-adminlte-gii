@@ -49,6 +49,12 @@ $js = <<<JS
             }
         });
 
+        var show = ($('#generator-tablename').val().indexOf('*') === -1);
+        $('.field-generator-modelclass').toggle(show);
+        if ($('#generator-generatequery').is(':checked')) {
+            $('.field-generator-queryclass').toggle(show);
+        }
+
         // model generator: translate table name to model class
         $('#generator-tablename').on('blur', function () {
             var tableName = $(this).val();
