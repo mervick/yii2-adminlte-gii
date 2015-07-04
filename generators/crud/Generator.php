@@ -10,6 +10,9 @@ use yii\helpers\Inflector;
 use yii\helpers\VarDumper;
 use yii\helpers\StringHelper;
 use yii\base\NotSupportedException;
+use yii\behaviors\TimestampBehavior;
+use mervick\adminlte\behaviors\ManyManyBehavior;
+use mervick\adminlte\behaviors\ImageBehavior;
 
 /**
  * AdminLTE CRUD Generator
@@ -30,8 +33,14 @@ use yii\base\NotSupportedException;
 class Generator extends \yii\gii\generators\crud\Generator
 {
     public $db = 'db';
+    public $modelClass;
+    public $controllerClass;
+    public $viewPath;
+    public $baseControllerClass = 'yii\web\Controller';
+    public $indexWidgetType = 'grid';
+    public $searchModelClass = '';
     public $enableI18N = true;
-    public $imageAttributes = ['img', 'image', 'logo', 'avatar', 'picture', 'preview'];
+    public $imageAttributes = ['img', 'image', 'logo', 'avatar', 'picture'];
     public $datetimeAttributes = ['date', 'datetime', 'time', 'timestamp'];
     public $addingI18NStrings = true;
     public $generateRelationsFields = true;
@@ -41,12 +50,64 @@ class Generator extends \yii\gii\generators\crud\Generator
 
     public $relations = [];
 
+    protected function readModel($className)
+    {
+        /** @var \yii\db\ActiveRecord $model */
+        $model = Yii::createObject($className);
+        $behaviors = $model->behaviors();
+
+        $imageAttributes = [];
+        $manyManyRelation = [];
+        $timestampAttributes = [];
+
+        foreach ($behaviors as $behavior) {
+            if (!is_array($behavior)) {
+                $behavior = ['class' => $behavior];
+            }
+
+            if ($behavior['class'] === TimestampBehavior::className()) {
+                if (!empty($behavior['attributes'])) {
+                    foreach ($behavior['attributes'] as $attributes) {
+                        if (is_array($attributes)) {
+                            $timestampAttributes = array_merge($timestampAttributes, array_values($attributes));
+                        } else {
+                            $timestampAttributes[] = $attributes;
+                        }
+                    }
+                } else {
+                    $timestampAttributes = array_merge($timestampAttributes, ['created_at', 'update_at']);
+                }
+            }
+            elseif ($behavior['class'] === ManyManyBehavior::className()) {
+                if (!empty($behavior['relations'])) {
+                    $manyManyRelation = $behavior['relations'];
+                }
+            }
+            elseif ($behavior['class'] === ImageBehavior::className()) {
+                if (!empty($behavior['attributes'])) {
+                    $imageAttributes = array_keys($behavior['attributes']);
+                }
+            }
+        }
+
+        \ChromePhp::log([$timestampAttributes, $imageAttributes, $manyManyRelation]);
+    }
+
     /**
      * @inheritdoc
      */
     public function getName()
     {
-        return 'ALT CRUD Generator';
+        return 'AdminLTE CRUD Generator';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getDescription()
+    {
+        return 'This generator generates a controller and views that implement CRUD (Create, Read, Update, Delete)
+            operations for the specified data model.';
     }
 
     /**
@@ -55,6 +116,21 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function rules()
     {
         return array_merge(parent::rules(), [
+            [['controllerClass', 'modelClass', 'searchModelClass', 'baseControllerClass'], 'filter', 'filter' => 'trim'],
+            [['modelClass', 'controllerClass', 'baseControllerClass', 'indexWidgetType'], 'required'],
+            [['searchModelClass'], 'compare', 'compareAttribute' => 'modelClass', 'operator' => '!==', 'message' => 'Search Model Class must not be equal to Model Class.'],
+            [['modelClass', 'controllerClass', 'baseControllerClass', 'searchModelClass'], 'match', 'pattern' => '/^[\w\\\\]*$/', 'message' => 'Only word characters and backslashes are allowed.'],
+            [['modelClass'], 'validateClass', 'params' => ['extends' => BaseActiveRecord::className()]],
+            [['baseControllerClass'], 'validateClass', 'params' => ['extends' => Controller::className()]],
+            [['controllerClass'], 'match', 'pattern' => '/Controller$/', 'message' => 'Controller class name must be suffixed with "Controller".'],
+            [['controllerClass'], 'match', 'pattern' => '/(^|\\\\)[A-Z][^\\\\]+Controller$/', 'message' => 'Controller class name must start with an uppercase letter.'],
+            [['controllerClass', 'searchModelClass'], 'validateNewClass'],
+            [['indexWidgetType'], 'in', 'range' => ['grid', 'list']],
+            [['modelClass'], 'validateModelClass'],
+            [['enableI18N'], 'boolean'],
+            [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
+            [['viewPath'], 'safe'],
+            [['icon'], 'match', 'pattern' => '/^(?:[0-9\w\-]+)?$/', 'message' => 'No valid image class.'],
             [['addingI18NStrings', 'generateRelationsFields'], 'boolean'],
             [['db'], 'filter', 'filter' => 'trim'],
             [['db'], 'required'],
@@ -69,8 +145,15 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function attributeLabels()
     {
         return array_merge(parent::attributeLabels(), [
+            'modelClass' => 'Model Class',
+            'controllerClass' => 'Controller Class',
+            'viewPath' => 'View Path',
+            'baseControllerClass' => 'Base Controller Class',
+            'indexWidgetType' => 'Widget Used in Index Page',
+            'searchModelClass' => 'Search Model Class',
             'addingI18NStrings' => 'Adding I18N Strings',
             'generateRelationsFields' => 'Generate Relations Fields',
+            'icon' => 'Icon class',
         ]);
     }
 
@@ -80,10 +163,34 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function hints()
     {
         return array_merge(parent::hints(), [
+            'modelClass' => 'This is the ActiveRecord class associated with the table that CRUD will be built upon.
+                You should provide a fully qualified class name, e.g., <code>app\models\Post</code>.',
+            'controllerClass' => 'This is the name of the controller class to be generated. You should
+                provide a fully qualified namespaced class (e.g. <code>app\controllers\PostController</code>),
+                and class name should be in CamelCase with an uppercase first letter. Make sure the class
+                is using the same namespace as specified by your application\'s controllerNamespace property.',
+            'viewPath' => 'Specify the directory for storing the view scripts for the controller. You may use path alias here, e.g.,
+                <code>/var/www/basic/controllers/views/post</code>, <code>@app/views/post</code>. If not set, it will default
+                to <code>@app/views/ControllerID</code>',
+            'baseControllerClass' => 'This is the class that the new CRUD controller class will extend from.
+                You should provide a fully qualified class name, e.g., <code>yii\web\Controller</code>.',
+            'indexWidgetType' => 'This is the widget type to be used in the index page to display list of the models.
+                You may choose either <code>GridView</code> or <code>ListView</code>',
+            'searchModelClass' => 'This is the name of the search model class to be generated. You should provide a fully
+                qualified namespaced class name, e.g., <code>app\models\PostSearch</code>.',
             'addingI18NStrings' => 'Enables the adding non existing I18N strings to the message category files.',
             'generateRelationsFields' => 'Enable to generate relations fields',
             'db' => 'This is the ID of the DB application component.',
+            'icon' => 'Icon css class, e.g. <code>fa fa-code</code>',
         ]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function requiredTemplates()
+    {
+        return ['controller.php'];
     }
 
     /**
@@ -92,10 +199,25 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function stickyAttributes()
     {
         return array_merge(parent::stickyAttributes(), [
+            'baseControllerClass',
+            'indexWidgetType',
             'addingI18NStrings',
             'generateRelationsFields',
             'db',
         ]);
+    }
+
+    /**
+     * Checks if model class is valid
+     */
+    public function validateModelClass()
+    {
+        /* @var $class ActiveRecord */
+        $class = $this->modelClass;
+        $pk = $class::primaryKey();
+        if (empty($pk)) {
+            $this->addError('modelClass', "The table associated with $class must have primary key(s).");
+        }
     }
 
     /**
@@ -116,6 +238,43 @@ class Generator extends \yii\gii\generators\crud\Generator
     protected function getDbConnection()
     {
         return Yii::$app->get($this->db, false);
+    }
+
+    /**
+     * @return string the controller view path
+     */
+    public function getViewPath()
+    {
+        if (empty($this->viewPath)) {
+            return Yii::getAlias('@backend/views/' . $this->getControllerID());
+        } else {
+            return Yii::getAlias($this->viewPath);
+        }
+    }
+
+    public function getNameAttribute()
+    {
+        foreach ($this->getColumnNames() as $name) {
+            if (!strcasecmp($name, 'name') || !strcasecmp($name, 'title')) {
+                return $name;
+            }
+        }
+        /* @var $class \yii\db\ActiveRecord */
+        $class = $this->modelClass;
+        $pk = $class::primaryKey();
+
+        return $pk[0];
+    }
+
+    /**
+     * @return string the controller ID (without the module ID prefix)
+     */
+    public function getControllerID()
+    {
+        $pos = strrpos($this->controllerClass, '\\');
+        $class = substr(substr($this->controllerClass, $pos + 1), 0, -10);
+
+        return Inflector::camel2id($class);
     }
 
     /**
@@ -750,6 +909,7 @@ class Generator extends \yii\gii\generators\crud\Generator
      */
     public function generate()
     {
+        $this->readModel($this->modelClass);
         $this->relationsFields();
         $files = parent::generate();
         if ($this->enableI18N && $this->addingI18NStrings && !empty($this->I18NStrings)) {
