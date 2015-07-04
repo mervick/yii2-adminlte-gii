@@ -39,13 +39,13 @@ $js = <<<JS
                 jQcontrollerClass = $("#generator-controllerclass"),
                 jQviewPath = $("#generator-viewpath");
 
-            if (jQsearchModelClass.val() == '' || jQsearchModelClass.val() == jQsearchModelClass.data('generated')) {
+            if (jQsearchModelClass.val() === '' || jQsearchModelClass.val() === jQsearchModelClass.data('generated')) {
                 jQsearchModelClass.val(searchModelClass).trigger("change");
             }
-            if (jQcontrollerClass.val() == '' || jQcontrollerClass.val() == jQcontrollerClass.data('generated')) {
+            if (jQcontrollerClass.val() === '' || jQcontrollerClass.val() === jQcontrollerClass.data('generated')) {
                 jQcontrollerClass.val(controllerClass).trigger("change");
             }
-            if (jQviewPath.val() == '' || jQviewPath.val() == jQviewPath.data('generated')) {
+            if (jQviewPath.val() === '' || jQviewPath.val() === jQviewPath.data('generated')) {
                 jQviewPath.val(viewPath).trigger("change");
             }
 
