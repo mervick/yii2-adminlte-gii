@@ -13,6 +13,7 @@ echo $form->field($generator, 'db');
 echo $form->field($generator, 'enableI18N')->checkbox();
 echo $form->field($generator, 'messageCategory');
 echo $form->field($generator, 'addingI18NStrings')->checkbox();
+echo $form->field($generator, 'icon');
 
 $js = <<<JS
     // hide `adding I18N strings` field when I18N is disabled
