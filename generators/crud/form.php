@@ -32,8 +32,8 @@ $js = <<<JS
 
         $("#generator-modelclass").on("change", function() {
             var o = $(this);
-            if (o.closest("div").not(".has-error")) {
-                var modelClass = jQthis.val(),
+            if (o.closest("div").not(".has-error") && o.val() !== '') {
+                var modelClass = o.val(),
                     searchModelClass = modelClass + 'Search',
                     modelClassName = modelClass.split('\\\\').pop(),
                     controllerClass = 'backend\\\\controllers\\\\' + modelClassName + 'Controller',
@@ -57,6 +57,11 @@ $js = <<<JS
                 jQviewPath.data('generated', viewPath);
             }
         });
+
+        $("#generator-searchmodelclass").data('generated', $("#generator-searchmodelclass").val());
+        $("#generator-controllerclass").data('generated', $("#generator-controllerclass").val());
+        $("#generator-viewpath").data('generated', $("#generator-viewpath").val());
+
     }, 30);
 JS;
 
