@@ -3,6 +3,7 @@
 namespace mervick\adminlte\gii\generators\crud;
 
 use Yii;
+use yii\base\ErrorException;
 use yii\db\Schema;
 use yii\gii\CodeFile;
 use yii\db\Connection;
@@ -53,47 +54,86 @@ class Generator extends \yii\gii\generators\crud\Generator
 
     public $relations = [];
 
-    protected function readModel($className)
+    const FIELD_TIMESTAMP_BEHAVIOR      = 'timestamp-behavior';
+    const FIELD_IMAGE_BEHAVIOR          = 'image-behavior';
+    const FIELD_MANY_MANY_BEHAVIOR      = 'many-many-behavior';
+
+
+    public function getModelAttributes()
     {
-        /** @var \yii\db\ActiveRecord $model */
-        $model = Yii::createObject($className);
-        $behaviors = $model->behaviors();
+        static $attributes;
 
-        $imageAttributes = [];
-        $manyManyRelation = [];
-        $timestampAttributes = [];
+        if (!isset($attributes)) {
+            /** @var \yii\base\Model $model */
+            $model = Yii::createObject($this->modelClass);
+            $attributes = [];
 
-        foreach ($behaviors as $behavior) {
-            if (!is_array($behavior)) {
-                $behavior = ['class' => $behavior];
+            // read schema
+            if (($tableSchema = $this->getTableSchema()) !== false) {
+                foreach ($tableSchema->columns as $attribute => $column) {
+                    $attributes[$attribute] = [
+                        'type' => null,
+                        'schema' => $column,
+                    ];
+                }
+            } else {
+                $attributes = array_fill_keys($model->attributes(), [
+                    'type' => null,
+                    'schema' => null,
+                ]);
             }
 
-            if ($behavior['class'] === TimestampBehavior::className()) {
-                if (!empty($behavior['attributes'])) {
-                    foreach ($behavior['attributes'] as $attributes) {
-                        if (is_array($attributes)) {
-                            $timestampAttributes = array_merge($timestampAttributes, array_values($attributes));
-                        } else {
-                            $timestampAttributes[] = $attributes;
+            // read behaviors
+            foreach ($model->behaviors() as $behavior) {
+                if (!is_array($behavior)) {
+                    $behavior = ['class' => $behavior];
+                }
+
+                if ($behavior['class'] === TimestampBehavior::className()) {
+                    if (!empty($behavior['attributes'])) {
+                        foreach ($behavior['attributes'] as $fields) {
+                            if (is_array($fields)) {
+                                foreach (array_values($fields) as $field) {
+                                    $attributes[$field]['type'] = self::FIELD_TIMESTAMP_BEHAVIOR;
+                                }
+                            } else {
+                                $attributes[$fields]['type'] = self::FIELD_TIMESTAMP_BEHAVIOR;
+                            }
+                        }
+                    } else {
+                        $attributes['created_at']['type'] = self::FIELD_TIMESTAMP_BEHAVIOR;
+                        $attributes['updated_at']['type'] = self::FIELD_TIMESTAMP_BEHAVIOR;
+                    }
+                }
+                elseif ($behavior['class'] === ManyManyBehavior::className()) {
+                    if (!empty($behavior['relations'])) {
+                        foreach ($behavior['relations'] as $field => $relation) {
+                            $attributes[$field] = [
+                                'type' => self::FIELD_MANY_MANY_BEHAVIOR,
+                                'data' => $relation,
+                            ];
                         }
                     }
-                } else {
-                    $timestampAttributes = array_merge($timestampAttributes, ['created_at', 'update_at']);
+                }
+                elseif ($behavior['class'] === ImageBehavior::className()) {
+                    if (!empty($behavior['attributes'])) {
+                        foreach (array_keys($behavior['attributes']) as $field) {
+                            $attributes[$field]['type'] = self::FIELD_IMAGE_BEHAVIOR;
+                        }
+                    }
                 }
             }
-            elseif ($behavior['class'] === ManyManyBehavior::className()) {
-                if (!empty($behavior['relations'])) {
-                    $manyManyRelation = $behavior['relations'];
-                }
+
+            // types
+            foreach ($attributes as $attribute => &$data) {
+
             }
-            elseif ($behavior['class'] === ImageBehavior::className()) {
-                if (!empty($behavior['attributes'])) {
-                    $imageAttributes = array_keys($behavior['attributes']);
-                }
-            }
+
+
+
         }
 
-        \ChromePhp::log([$timestampAttributes, $imageAttributes, $manyManyRelation]);
+        return $attributes;
     }
 
     /**
@@ -157,7 +197,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             'searchModelClass' => 'Search Model Class',
             'addingI18NStrings' => 'Adding I18N Strings',
             'generateRelationsFields' => 'Generate Relations Fields',
-            'icon' => 'Icon class',
+            'icon' => 'Icon css class',
         ]);
     }
 
