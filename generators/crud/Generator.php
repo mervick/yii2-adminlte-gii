@@ -185,7 +185,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             'addingI18NStrings' => 'Enables the adding non existing I18N strings to the message category files.',
             'generateRelationsFields' => 'Enable to generate relations fields',
             'db' => 'This is the ID of the DB application component.',
-            'icon' => 'Icon css class, e.g. <code>fa fa-code</code>',
+            'icon' => 'Icon css class, e.g. <code>glyphicon glyphicon-user</code> render to <i class="glyphicon glyphicon-user"></i>',
         ]);
     }
 
