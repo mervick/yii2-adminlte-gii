@@ -420,7 +420,7 @@ class Generator extends \yii\gii\Generator
             foreach ($this->relationsSetters[$tableName] as $rs) {
                 $behavior['relations'][$rs['property']] = [
                     'label' => $rs['label'],
-                    'class' => call_user_func([$rs['many_class'], 'className']),
+                    'class' => $rs['many_class'],
                     'refs' => [
                         $rs['many_id'],
                         $rs['many_fk'],
