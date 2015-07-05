@@ -40,11 +40,8 @@ class Generator extends \yii\gii\generators\crud\Generator
     public $controllerClass;
     public $viewPath;
     public $baseControllerClass = 'yii\web\Controller';
-    public $indexWidgetType = 'grid';
     public $searchModelClass = '';
     public $enableI18N = true;
-    public $imageAttributes = ['img', 'image', 'logo', 'avatar', 'picture'];
-    public $datetimeAttributes = ['date', 'datetime', 'time', 'timestamp'];
     public $addingI18NStrings = true;
     public $generateRelationsFields = true;
     public $icon;
@@ -57,6 +54,18 @@ class Generator extends \yii\gii\generators\crud\Generator
     const FIELD_TIMESTAMP_BEHAVIOR      = 'timestamp-behavior';
     const FIELD_IMAGE_BEHAVIOR          = 'image-behavior';
     const FIELD_MANY_MANY_BEHAVIOR      = 'many-many-behavior';
+
+    const FIELD_PRIMARY                 = 'primary';
+    const FIELD_DATETIME                = 'datetime';
+    const FIELD_PASSWORD                = 'password';
+    const FIELD_TEXT                    = 'text';
+    const FIELD_HTML                    = 'html';
+    const FIELD_FLOAT                   = 'float';
+    const FIELD_INPUT                   = 'input';
+    const FIELD_MANY                    = 'many';
+    const FIELD_SELECT                  = 'select';
+    const FIELD_STATUS                  = 'status';
+    const FIELD_INTEGER                 = 'integer';
 
 
     public function getModelAttributes()
@@ -124,8 +133,32 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
             }
 
+            /**
+             * @param array $data
+             * @param string|null $property
+             * @return \yii\db\ColumnSchema|null
+             */
+            $schema = function($data, $property=null) {
+                $schema = isset($data['schema']) ? $data['schema'] : null;
+                if (!$property) {
+                    return $schema;
+                }
+                return $schema->$property;
+            };
+
             // types
-            foreach ($attributes as $attribute => &$data) {
+            foreach ($attributes as $name => &$data) {
+                if ($schema($data, 'isPrimaryKey')) {
+                    $data['type'] = self::FIELD_PRIMARY;
+                }
+                elseif (empty($data['type'])) {
+                    if ((!$schema($data) || in_array($schema($data, 'phpType'), ['integer', 'string'])) &&
+                        in_array($name, ['date', 'datetime', 'time', 'timestamp'])) {
+                        $data['type'] = self::FIELD_DATETIME;
+                    } elseif () {
+
+                    }
+                }
 
             }
 
