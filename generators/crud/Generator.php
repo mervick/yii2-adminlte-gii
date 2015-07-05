@@ -6,6 +6,8 @@ use Yii;
 use yii\db\Schema;
 use yii\gii\CodeFile;
 use yii\db\Connection;
+use yii\db\BaseActiveRecord;
+use yii\base\Controller;
 use yii\helpers\Inflector;
 use yii\helpers\VarDumper;
 use yii\helpers\StringHelper;
@@ -44,6 +46,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public $datetimeAttributes = ['date', 'datetime', 'time', 'timestamp'];
     public $addingI18NStrings = true;
     public $generateRelationsFields = true;
+    public $icon;
 
     protected $I18NStrings = [];
     protected $classNames = [];
@@ -121,6 +124,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             [['searchModelClass'], 'compare', 'compareAttribute' => 'modelClass', 'operator' => '!==', 'message' => 'Search Model Class must not be equal to Model Class.'],
             [['modelClass', 'controllerClass', 'baseControllerClass', 'searchModelClass'], 'match', 'pattern' => '/^[\w\\\\]*$/', 'message' => 'Only word characters and backslashes are allowed.'],
             [['modelClass'], 'validateClass', 'params' => ['extends' => BaseActiveRecord::className()]],
+            [['modelClass'], 'match', 'pattern' => '/^(?:[a-zA-Z][a-zA-Z0-9]+\\\\)+[A-Z][a-zA-Z0-9]+$/'],
             [['baseControllerClass'], 'validateClass', 'params' => ['extends' => Controller::className()]],
             [['controllerClass'], 'match', 'pattern' => '/Controller$/', 'message' => 'Controller class name must be suffixed with "Controller".'],
             [['controllerClass'], 'match', 'pattern' => '/(^|\\\\)[A-Z][^\\\\]+Controller$/', 'message' => 'Controller class name must start with an uppercase letter.'],
