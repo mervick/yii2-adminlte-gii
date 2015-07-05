@@ -133,6 +133,10 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
             }
 
+            //\ChromePhp::log($attributes);
+            \ChromePhp::log($tableSchema->foreignKeys);
+            return;
+
             /**
              * @param array $data
              * @param string|null $property
@@ -143,6 +147,10 @@ class Generator extends \yii\gii\generators\crud\Generator
                 if (!$property) {
                     return $schema;
                 }
+                if (!$schema) {
+                    return $schema;
+                }
+                \ChromePhp::log($property);
                 return $schema->$property;
             };
 
@@ -155,9 +163,9 @@ class Generator extends \yii\gii\generators\crud\Generator
                     if ((!$schema($data) || in_array($schema($data, 'phpType'), ['integer', 'string'])) &&
                         in_array($name, ['date', 'datetime', 'time', 'timestamp'])) {
                         $data['type'] = self::FIELD_DATETIME;
-                    } elseif () {
+                    } /*elseif () {
 
-                    }
+                    }*/
                 }
 
             }
@@ -986,7 +994,9 @@ class Generator extends \yii\gii\generators\crud\Generator
      */
     public function generate()
     {
-        $this->readModel($this->modelClass);
+        $this->getModelAttributes();
+        return;
+        //$this->readModel($this->modelClass);
         $this->relationsFields();
         $files = parent::generate();
         if ($this->enableI18N && $this->addingI18NStrings && !empty($this->I18NStrings)) {
