@@ -116,8 +116,8 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
                 elseif ($behavior['class'] === ManyManyBehavior::className()) {
                     if (!empty($behavior['relations'])) {
-                        foreach ($behavior['relations'] as $field => $relation) {
-                            $attributes[$field] = [
+                        foreach ($behavior['relations'] as $id => $relation) {
+                            $attributes[$id] = [
                                 'type' => self::FIELD_MANY_MANY_BEHAVIOR,
                                 'data' => $relation,
                             ];
@@ -126,15 +126,17 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
                 elseif ($behavior['class'] === ImageBehavior::className()) {
                     if (!empty($behavior['attributes'])) {
-                        foreach (array_keys($behavior['attributes']) as $field) {
-                            $attributes[$field]['type'] = self::FIELD_IMAGE_BEHAVIOR;
+                        foreach (array_keys($behavior['attributes']) as $id) {
+                            $attributes[$id]['type'] = self::FIELD_IMAGE_BEHAVIOR;
                         }
                     }
                 }
             }
 
-            //\ChromePhp::log($attributes);
-            \ChromePhp::log($tableSchema->foreignKeys);
+            foreach ($tableSchema->foreignKeys as $id => $fk)
+            {
+
+            }
             return;
 
             /**
@@ -215,7 +217,7 @@ class Generator extends \yii\gii\generators\crud\Generator
             [['enableI18N'], 'boolean'],
             [['messageCategory'], 'validateMessageCategory', 'skipOnEmpty' => false],
             [['viewPath'], 'safe'],
-            [['icon'], 'match', 'pattern' => '/^(?:[0-9\w\-]+)?$/', 'message' => 'No valid image class.'],
+            [['icon'], 'match', 'pattern' => '/^(?:[0-9a-z\-]+)?$/i', 'message' => 'No valid image class.'],
             [['addingI18NStrings', 'generateRelationsFields'], 'boolean'],
             [['db'], 'filter', 'filter' => 'trim'],
             [['db'], 'required'],
