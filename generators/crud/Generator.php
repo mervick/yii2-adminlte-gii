@@ -55,6 +55,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     const FIELD_IMAGE_BEHAVIOR          = 'image-behavior';
     const FIELD_MANY_MANY_BEHAVIOR      = 'many-many-behavior';
 
+    const FIELD_FOREIGN_KEY             = 'foreign-key';
     const FIELD_PRIMARY                 = 'primary';
     const FIELD_DATETIME                = 'datetime';
     const FIELD_PASSWORD                = 'password';
@@ -67,6 +68,32 @@ class Generator extends \yii\gii\generators\crud\Generator
     const FIELD_STATUS                  = 'status';
     const FIELD_INTEGER                 = 'integer';
 
+
+    private function getLabelAttribute($class)
+    {
+        if (is_subclass_of($class, 'yii\db\ActiveRecord')) {
+            /** @var $modelClass \yii\db\ActiveRecord */
+            $columns = $modelClass::getTableSchema()->columns;
+            $primary = null;
+            $attributes = [];
+            foreach ($columns as $column) {
+                if (!$primary && $column->isPrimaryKey) {
+                    $primary = $column->name;
+                }
+                if (!$column->allowNull && $column->phpType === 'string') {
+                    $attributes[] = $column->name;
+                }
+            }
+        } else {
+            /* @var $model \yii\base\Model */
+            $model = new $class();
+            $attributes = $model->attributes();
+            $primary = $model->p;
+        }
+
+        $nameAttributes = array_intersect(['name', 'title', 'label'], $attributes);
+        return empty($nameAttributes) ? empty($attributes) ? $primary : $attributes[0] : $nameAttributes[0];
+    }
 
     public function getModelAttributes()
     {
@@ -88,7 +115,6 @@ class Generator extends \yii\gii\generators\crud\Generator
             } else {
                 $attributes = array_fill_keys($model->attributes(), [
                     'type' => null,
-                    'schema' => null,
                 ]);
             }
 
@@ -133,32 +159,35 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
             }
 
-            foreach ($tableSchema->foreignKeys as $id => $fk)
-            {
-
+            if ($tableSchema) {
+                foreach ($tableSchema->foreignKeys as $fk) {
+                    $table = $fk[0];
+                    unset($fk[0]);
+                    $id = array_keys($fk)[0];
+                    $className = $this->generateClassName($table);
+                    $class = "$this->modelNS\\$className";
+                    $attributes[$id] = [
+                        'type' => self::FIELD_FOREIGN_KEY,
+                        'data' => [
+                            'class' => $class,
+                            'table' => $table,
+                            'key' => $fk[$id],
+                            'orderBy' => $this->getLabelAttribute($class),
+                            'label' => Inflector::camel2words($className),
+                        ],
+                    ];
+                }
             }
-            return;
 
-            /**
-             * @param array $data
-             * @param string|null $property
-             * @return \yii\db\ColumnSchema|null
-             */
-            $schema = function($data, $property=null) {
-                $schema = isset($data['schema']) ? $data['schema'] : null;
-                if (!$property) {
-                    return $schema;
-                }
-                if (!$schema) {
-                    return $schema;
-                }
-                \ChromePhp::log($property);
-                return $schema->$property;
-            };
+            \ChromePhp::log($attributes);return;
 
             // types
             foreach ($attributes as $name => &$data) {
-                if ($schema($data, 'isPrimaryKey')) {
+                if ($tableSchema) {
+                    /** @var \yii\db\ColumnSchema $column */
+                    $column = $data['schema'];
+                }
+                if ($tableSchema && $column->isPrimaryKey) {
                     $data['type'] = self::FIELD_PRIMARY;
                 }
                 elseif (empty($data['type'])) {
