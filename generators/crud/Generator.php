@@ -17,6 +17,8 @@ use yii\behaviors\TimestampBehavior;
 use mervick\adminlte\behaviors\ManyManyBehavior;
 use mervick\adminlte\behaviors\ImageBehavior;
 
+define('PHP_INT_MIN', ~PHP_INT_MAX);
+
 /**
  * AdminLTE CRUD Generator
  *
@@ -88,7 +90,6 @@ class Generator extends \yii\gii\generators\crud\Generator
             /* @var $model \yii\base\Model */
             $model = new $class();
             $attributes = $model->attributes();
-            $primary = $model->p;
         }
 
         $nameAttributes = array_intersect(['name', 'title', 'label'], $attributes);
@@ -179,24 +180,37 @@ class Generator extends \yii\gii\generators\crud\Generator
                 }
             }
 
-            \ChromePhp::log($attributes);return;
-
             // types
             foreach ($attributes as $name => &$data) {
+                $column = null;
                 if ($tableSchema) {
                     /** @var \yii\db\ColumnSchema $column */
                     $column = $data['schema'];
                 }
-                if ($tableSchema && $column->isPrimaryKey) {
+                if ($column && $column->isPrimaryKey) {
                     $data['type'] = self::FIELD_PRIMARY;
                 }
                 elseif (empty($data['type'])) {
-                    if ((!$schema($data) || in_array($schema($data, 'phpType'), ['integer', 'string'])) &&
+                    $type = $column ? $column->phpType : null;
+                    if ((!$column || in_array($type, ['integer', 'string'])) &&
                         in_array($name, ['date', 'datetime', 'time', 'timestamp'])) {
                         $data['type'] = self::FIELD_DATETIME;
-                    } /*elseif () {
-
-                    }*/
+                    } elseif ($name === 'status') {
+                        $data['type'] = self::FIELD_STATUS;
+                    } elseif ($type === 'integer') {
+                        $min = $column->unsigned ? 0 : PHP_INT_MIN;
+                        $max = PHP_INT_MAX;
+                        if ($column->size && is_int($column->size)) {
+                            $max = pow(10, $column->size) - 1;
+                            if ($min === PHP_INT_MIN) {
+                                $min = -$max;
+                            }
+                        }
+                        $data['data'] = [
+                            'min' => $min,
+                            'max' => $max,
+                        ];
+                    }
                 }
 
             }
