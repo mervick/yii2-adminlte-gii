@@ -17,7 +17,7 @@ use yii\behaviors\TimestampBehavior;
 use mervick\adminlte\behaviors\ManyManyBehavior;
 use mervick\adminlte\behaviors\ImageBehavior;
 
-define('PHP_INT_MIN', ~PHP_INT_MAX);
+defined('PHP_INT_MIN') || define('PHP_INT_MIN', ~PHP_INT_MAX);
 
 /**
  * AdminLTE CRUD Generator
@@ -203,13 +203,36 @@ class Generator extends \yii\gii\generators\crud\Generator
                         if ($column->size && is_int($column->size)) {
                             $max = pow(10, $column->size) - 1;
                             if ($min === PHP_INT_MIN) {
-                                $min = -$max;
+                                $min = -$max+1;
                             }
                         }
+                        $data['type'] = self::FIELD_INTEGER;
                         $data['data'] = [
                             'min' => $min,
                             'max' => $max,
                         ];
+                    } elseif ($type === 'double') {
+                        $min = $column->unsigned ? 0 : PHP_INT_MIN;
+                        $max = PHP_INT_MAX;
+                        $step = 0.0001;
+                        $decimals = 4;
+                        if ($column->size && is_int($column->size) && is_int($column->scale)) {
+                            $max = pow(10, $column->size - $column->scale) - 1;
+                            if ($min === PHP_INT_MIN) {
+                                $min = -$max+1;
+                            }
+                            $step = pow(10, -1 * $column->scale);
+                            $decimals = $column->scale;
+                        }
+                        $data['type'] = self::FIELD_FLOAT;
+                        $data['data'] = [
+                            'min' => $min,
+                            'max' => $max,
+                            'step' => $step,
+                            'decimals' => $decimals,
+                        ];
+                    } else {
+                        $data['type'] = self::FIELD_INPUT;
                     }
                 }
 
