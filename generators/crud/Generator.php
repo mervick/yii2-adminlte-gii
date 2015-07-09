@@ -60,13 +60,13 @@ class Generator extends \yii\gii\generators\crud\Generator
     const FIELD_FOREIGN_KEY             = 'foreign-key';
     const FIELD_PRIMARY                 = 'primary';
     const FIELD_DATETIME                = 'datetime';
-    const FIELD_PASSWORD                = 'password';
-    const FIELD_TEXT                    = 'text';
+    const FIELD_PASSWORD                = 'password'; #!
+    const FIELD_TEXT                    = 'text'; #!
     const FIELD_HTML                    = 'html';
     const FIELD_FLOAT                   = 'float';
     const FIELD_INPUT                   = 'input';
     const FIELD_MANY                    = 'many';
-    const FIELD_SELECT                  = 'select';
+    const FIELD_SELECT                  = 'select'; #!
     const FIELD_STATUS                  = 'status';
     const FIELD_INTEGER                 = 'integer';
 
@@ -190,8 +190,10 @@ class Generator extends \yii\gii\generators\crud\Generator
                 if ($column && $column->isPrimaryKey) {
                     $data['type'] = self::FIELD_PRIMARY;
                 }
-                elseif (empty($data['type'])) {
+                elseif (empty($data['type']))
+                {
                     $type = $column ? $column->phpType : null;
+
                     if ((!$column || in_array($type, ['integer', 'string'])) &&
                         in_array($name, ['date', 'datetime', 'time', 'timestamp'])) {
                         $data['type'] = self::FIELD_DATETIME;
@@ -231,14 +233,20 @@ class Generator extends \yii\gii\generators\crud\Generator
                             'step' => $step,
                             'decimals' => $decimals,
                         ];
+                    } elseif ((!$column || $type === 'string') && preg_match('/_html$/i', $name)) {
+                        $data['type'] = self::FIELD_HTML;
                     } else {
                         $data['type'] = self::FIELD_INPUT;
                     }
                 }
-
             }
 
-
+            // pull right
+            $keys = array_keys($attributes);
+            $count = count($keys);
+            foreach ($keys as $index => $attribute) {
+                $attributes[$attribute]['pull_right'] = $index * 2 >= $count;
+            }
 
         }
 
