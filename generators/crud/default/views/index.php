@@ -4,7 +4,7 @@ use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
 
 /* @var $this yii\web\View */
-/* @var $generator backend\gii\generators\crud\Generator */
+/* @var $generator mervick\adminlte\gii\generators\crud\Generator */
 
 $urlParams = $generator->generateUrlParams();
 $nameAttribute = $generator->getNameAttribute();

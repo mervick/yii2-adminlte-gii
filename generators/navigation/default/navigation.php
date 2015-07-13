@@ -17,7 +17,7 @@ use yii\helpers\Url;
 use yii\helpers\Inflector;
 
 /** @var array $controllers */
-/** @var \backend\gii\generators\navigation\Generator $generator */
+/** @var mervick\adminlte\gii\generators\navigation\Generator $generator */
 
 $items = [];
 foreach ($controllers as $actions) {

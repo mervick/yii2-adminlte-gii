@@ -20,7 +20,7 @@ class DefaultController extends GiiController implements ViewContextInterface
     /**
      * @inheritdoc
      */
-    public $layout = '@backend/views/layouts/main.php';
+    public $layout = '@vendor/mervick/yii2-adminlte-gii/views/layouts/main.php';
 
 
     /**

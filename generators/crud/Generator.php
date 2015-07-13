@@ -407,7 +407,7 @@ class Generator extends \yii\gii\generators\crud\Generator
     public function getViewPath()
     {
         if (empty($this->viewPath)) {
-            return Yii::getAlias('@backend/views/' . $this->getControllerID());
+            return Yii::getAlias('@vendor/mervick/yii2-adminlte-gii/views/' . $this->getControllerID());
         } else {
             return Yii::getAlias($this->viewPath);
         }

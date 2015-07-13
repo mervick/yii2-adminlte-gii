@@ -8,7 +8,7 @@ use yii\db\Schema;
 
 
 /* @var $this yii\web\View */
-/* @var $generator backend\gii\generators\crud\Generator */
+/* @var $generator mervick\adminlte\gii\generators\crud\Generator */
 
 $modelClass = StringHelper::basename($generator->modelClass);
 $searchModelClass = StringHelper::basename($generator->searchModelClass);
