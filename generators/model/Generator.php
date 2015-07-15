@@ -88,7 +88,7 @@ class Generator extends \yii\gii\Generator
             [['imagesPath'], 'filter', 'filter' => function($value) { return trim($value, '/'); }],
             [['imagesDomain', 'imagesPath'], 'required'],
             [['addingI18NStrings'], 'boolean'],
-            [['imagesDomain'], 'match', 'pattern' => '/^[\w](?:[\w-]+[\w])?\.(?:{\$domain})|(?:[\w](?:[0-9\w\-\.]+)?[\w]\.[\w]+)$/', 'message' => 'No valid images domain.'],
+            [['imagesDomain'], 'match', 'pattern' => '/^(?:[\w](?:[\w-]+[\w])?\.(?:{\$domain})|(?:[\w](?:[0-9\w\-\.]+)?[\w]\.[\w]+))|(?:@w+)$/', 'message' => 'No valid images domain.'],
             [['messagesPaths'], 'validateMessagesPaths'],
         ]);
     }
