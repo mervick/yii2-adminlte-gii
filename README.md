@@ -1,4 +1,5 @@
 # Yii2 AdminLTE Gii Extension
+[![Analytics](https://ga-beacon.appspot.com/UA-65295275-1/yii2-adminlte-gii)](https://github.com/igrigorik/ga-beacon)
 
 Yii2 Framework Code Generator Extension Gii for AdminLTE template
 
